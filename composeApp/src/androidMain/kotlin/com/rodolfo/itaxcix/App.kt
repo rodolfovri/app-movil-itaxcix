@@ -12,18 +12,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.navigation.compose.rememberNavController
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 import appitaxcix.composeapp.generated.resources.Res
 import appitaxcix.composeapp.generated.resources.compose_multiplatform
+import com.rodolfo.itaxcix.navigation.AppNavigation
 
 @Composable
-@Preview
 fun App() {
     MaterialTheme {
-        Surface (modifier = Modifier.fillMaxSize()) {
-
-        } // Surface nos sirve para aplicar un tema
+        Surface (
+            modifier = Modifier.fillMaxSize(),
+            color = Color.White
+        ) {
+            AppNavigation()
+        }
     }
 }

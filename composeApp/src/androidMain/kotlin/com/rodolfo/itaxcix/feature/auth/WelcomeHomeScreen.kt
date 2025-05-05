@@ -1,9 +1,9 @@
 package com.rodolfo.itaxcix.feature.auth
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,19 +29,30 @@ import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 @Preview
 @Composable
 fun WelcomeHomeScreenPreview() {
-    WelcomeHomeScreen()
+    WelcomeHomeScreen(
+        onLoginClick = {},
+        onRegisterClick = {}
+    )
 }
 
 @Composable
-fun WelcomeHomeScreen() {
+fun WelcomeHomeScreen(
+    onLoginClick: () -> Unit,
+    onRegisterClick: () -> Unit,
+) {
     Column (
-        modifier = Modifier.fillMaxWidth().padding(30.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(30.dp)
+            .background(Color.White),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Bienvenido a iTaxCix",
-            modifier = Modifier.padding(bottom = 16.dp)
+            text = "iTaxCix",
+            modifier = Modifier.fillMaxWidth(),
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Start
         )
 
         Image(
@@ -65,7 +76,7 @@ fun WelcomeHomeScreen() {
             text = "Solicita un conductor o regístrate para ofrecer tus servicios. Todo desde un solo lugar, con confianza y rapidez.",
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.width(300.dp)
                 .padding(bottom = 30.dp)
         )
 
@@ -73,7 +84,7 @@ fun WelcomeHomeScreen() {
             modifier = Modifier.width(300.dp)
                 .padding(bottom = 12.dp,
                     top = 20.dp),
-            onClick = { /* TODO: Navigate to the next screen */ },
+            onClick = { onLoginClick() },
             shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(
                 containerColor = ITaxCixPaletaColors.Blue1, // Color de fondo del botón
@@ -91,12 +102,13 @@ fun WelcomeHomeScreen() {
 
         OutlinedButton(
             modifier = Modifier.width(300.dp),
-            onClick = {},
+            onClick = { onRegisterClick() },
             shape = RectangleShape,
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = Color.White, // Color de fondo del botón
                 contentColor = ITaxCixPaletaColors.Blue1 // Color del texto del botón
             ),
+            border = BorderStroke(1.dp, ITaxCixPaletaColors.Blue1) // Color del borde del botón
         ) {
             Text(
                 text = "Regístrate",
@@ -107,8 +119,4 @@ fun WelcomeHomeScreen() {
             )
         }
     }
-
-
-
 }
-
