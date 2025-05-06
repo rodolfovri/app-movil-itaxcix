@@ -1,4 +1,16 @@
 <resources>
     <string name="app_name">iTaxCix</string>
     <string name="back">Go Back</string>
+
+    <string-array name="document_types">
+        <item>DNI</item>
+        <item>Pasaporte</item>
+        <item>Carnet de Extranjería</item>
+        <item>RUC</item>
+    </string-array>
+    
+    <string-array name="contact_method">
+        <item>Email</item>
+        <item>Teléfono</item>
+    </string-array>
 </resources>

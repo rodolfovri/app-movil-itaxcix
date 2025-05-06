@@ -10,3 +10,7 @@ object ITaxCixPaletaColors {
     val Blue4 = Color(0xFFC2D7F2) // Azul muy claro
     val Background = Color(0xFFF2F2F2) // Fondo gris claro
 }
+
+object MyColors {
+    val Background1 = Color(0xFFF9F8F9) // Azul principal oscuro
+}
