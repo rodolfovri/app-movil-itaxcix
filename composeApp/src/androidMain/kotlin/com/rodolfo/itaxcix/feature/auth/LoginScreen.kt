@@ -6,8 +6,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,14 +35,22 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.rodolfo.itaxcix.R
+import com.rodolfo.itaxcix.data.remote.api.AppModule
+import com.rodolfo.itaxcix.feature.auth.viewmodel.LoginViewModel
+import com.rodolfo.itaxcix.feature.auth.viewmodel.RegisterViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 
 @Preview
@@ -51,12 +62,21 @@ fun LoginScreenPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    viewModel: LoginViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return AppModule.provideLoginViewModel() as T
+            }
+        }
+    )
 ) {
 
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
+
+    var isPassVisible by remember { mutableStateOf(false) }
+
 
     Scaffold(
         containerColor = Color.White,
@@ -92,9 +112,8 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
             ) {
-                // Add your login form here
                 Text(
-                    text = "¡Bienvenido!",
+                    text = "¡Accede a iTaxCix!",
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
@@ -103,7 +122,7 @@ fun LoginScreen(
                 )
 
                 Text(
-                    text = "Ingresa tus credenciales para continuar.",
+                    text = "Inicia sesión para comenzar a moverte con seguridad.",
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 30.dp),
@@ -129,10 +148,23 @@ fun LoginScreen(
                     value = password,
                     onValueChange = { password = it },
                     label = { Text(text = "Ingresa tu contraseña") },
+                    visualTransformation = if (isPassVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { isPassVisible = !isPassVisible }) {
+                            Icon(
+                                imageVector = if (isPassVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                contentDescription = if (isPassVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                                tint = ITaxCixPaletaColors.Blue1
+                            )
+                        }
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 30.dp),
-                    maxLines = 1,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = ITaxCixPaletaColors.Blue1,
                         unfocusedBorderColor = ITaxCixPaletaColors.Blue3,

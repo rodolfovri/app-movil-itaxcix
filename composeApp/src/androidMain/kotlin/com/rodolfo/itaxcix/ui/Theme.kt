@@ -13,4 +13,5 @@ object ITaxCixPaletaColors {
 
 object MyColors {
     val Background1 = Color(0xFFF9F8F9) // Azul principal oscuro
+    val Error = Color(0xFFEA4C2D) // Rojo de error
 }

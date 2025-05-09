@@ -5,37 +5,32 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rodolfo.itaxcix.R
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
-import com.rodolfo.itaxcix.ui.MyColors
 
 @Preview
 @Composable
@@ -51,61 +46,127 @@ fun RegisterOptionsScreen(
     onCitizenClick: () -> Unit,
     onDriverClick: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(25.dp),
-        verticalArrangement = Arrangement.SpaceEvenly,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        UserCard(
-            title = "Ciudadano",
-            imageRes = R.drawable.citizen,
-            onClick = { onCitizenClick() }
-        )
+    Scaffold(
+        bottomBar = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Puedes cambiar tu rol en cualquier momento",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(innerPadding)
+                .padding(horizontal = 25.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            // Encabezado
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(vertical = 32.dp)
+            ) {
+                Text(
+                    text = "¡Bienvenido!",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = ITaxCixPaletaColors.Blue1,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
 
-        Text(
-            text = "Selecciona tu tipo de registro",
-            style = MaterialTheme.typography.titleMedium,
-            color = ITaxCixPaletaColors.Blue1
-        )
+                Text(
+                    text = "¿Cómo deseas registrarte en la aplicación?",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Gray
+                )
+            }
 
-        UserCard(
-            title = "Conductor",
-            imageRes = R.drawable.driver,
-            onClick = { onDriverClick() }
-        )
+            // Tarjeta de Ciudadano
+            UserOptionCard(
+                title = "Ciudadano",
+                description = "Solicita viajes y disfruta de un transporte seguro",
+                imageRes = R.drawable.citizen,
+                onClick = { onCitizenClick() }
+            )
+
+            // Tarjeta de Conductor
+            UserOptionCard(
+                title = "Conductor",
+                description = "Conduce y genera confianza con tu vehículo",
+                imageRes = R.drawable.driver,
+                onClick = { onDriverClick() }
+            )
+
+            Spacer(modifier = Modifier.weight(1f)) // Ocupa el espacio restante
+        }
     }
 }
 
 @Composable
-fun UserCard(
+fun UserOptionCard(
     title: String,
+    description: String,
     imageRes: Int,
     onClick: () -> Unit
 ) {
-    Column(
+    Card(
         modifier = Modifier
-            .size(200.dp)
-            .shadow(8.dp, CircleShape)
-            .clip(CircleShape)
-            .background(MyColors.Background1)
-            .clickable { onClick() },
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxWidth()
+            .wrapContentHeight() // ✅ se adapta al contenido
+            .clickable { onClick() }
+            .shadow(elevation = 2.dp),
+        shape = RectangleShape,
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        )
     ) {
-        Image(
-            painter = painterResource(imageRes),
-            contentDescription = title,
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .clip(CircleShape)
-        )
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Card(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape),
+                colors = CardDefaults.cardColors(
+                    containerColor = ITaxCixPaletaColors.Blue1.copy(alpha = 0.1f)
+                )
+            ) {
+                Image(
+                    painter = painterResource(imageRes),
+                    contentDescription = title,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium
-        )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = ITaxCixPaletaColors.Blue1
+                )
+
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+            }
+        }
     }
 }

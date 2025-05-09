@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">iTaxCix</string>
     <string name="back">Go Back</string>
+    <string name="validation_description">
+        <string>Por favor, elige tu número de documento para ingresar.</string>
+    </string>
 
     <string-array name="document_types">
         <item>DNI</item>
