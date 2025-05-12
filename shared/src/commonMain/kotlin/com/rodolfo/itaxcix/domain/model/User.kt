@@ -9,4 +9,5 @@ data class User (
     val address: String,
     val city: String,
     val country: String,
+    var rol: String = "",
 )

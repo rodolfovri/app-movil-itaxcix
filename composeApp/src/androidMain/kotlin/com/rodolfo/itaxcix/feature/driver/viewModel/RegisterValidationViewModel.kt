@@ -49,8 +49,8 @@ class RegisterValidationViewModel : ViewModel() {
             _plateError.value = "La placa no puede estar vacía"
             return false
         }
-        else if (!_plate.value.matches(Regex("^[A-Z]{3}-[0-9]{3}$"))) {
-            _plateError.value = "La placa debe tener el formato AAA-000"
+        else if (_plate.value.length != 6) {
+            _plateError.value = "La placa debe tener 6 carácteres"
             return false
         }
         _plateError.value = null
@@ -89,7 +89,6 @@ class RegisterValidationViewModel : ViewModel() {
         return true
     }
 
-    // Validar y continuar
     // Validar documento y placa
     fun validate() {
         if (validateDocument() && validatePlate()) {

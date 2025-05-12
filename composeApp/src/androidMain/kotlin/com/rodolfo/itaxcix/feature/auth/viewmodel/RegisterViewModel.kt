@@ -149,13 +149,19 @@ class RegisterViewModel(
             try {
                 _registerState.value = RegisterState.Loading
 
+                val contactValue = if(_contactTypeId.value == 2 && !_contact.value.startsWith("+51")) {
+                    "+51${_contact.value}"
+                } else {
+                    _contact.value
+                }
+
                 val request = CitizenRegisterRequestDTO(
                     documentTypeId = _documentTypeId.value,
                     document = _document.value,
                     alias = _alias.value,
                     password = _password.value,
                     contactTypeId = _contactTypeId.value,
-                    contact = _contact.value
+                    contact = contactValue
                 )
 
                 val user = userRepository.registerCitizen(request)

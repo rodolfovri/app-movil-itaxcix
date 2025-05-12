@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -74,6 +75,10 @@ fun RegisterValidationDriverScreen(
 
     val document by viewModel.document.collectAsState()
     val plate by viewModel.plate.collectAsState()
+
+    val documentError by viewModel.documentError.collectAsState()
+    val plateError by viewModel.plateError.collectAsState()
+
     val validationState by viewModel.validationState.collectAsState()
 
     LaunchedEffect(validationState) {
@@ -125,7 +130,7 @@ fun RegisterValidationDriverScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Image(
-                    painter = painterResource(R.drawable.register_validation_citizen),
+                    painter = painterResource(R.drawable.register_validation_driver),
                     contentDescription = "Registro de conductor",
                     modifier = Modifier
                         .fillMaxWidth(0.80f)
@@ -180,6 +185,7 @@ fun RegisterValidationDriverScreen(
                     value = document,
                     onValueChange = { viewModel.updateDocument(it) },
                     label = { Text(text = "Ingresa tu número de documento") },
+                    isError = documentError != null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 5.dp),
@@ -188,7 +194,11 @@ fun RegisterValidationDriverScreen(
                         focusedBorderColor = ITaxCixPaletaColors.Blue1,
                         unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
                         cursorColor = ITaxCixPaletaColors.Blue1,
-                        focusedLabelColor = ITaxCixPaletaColors.Blue1
+                        focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                        selectionColors = TextSelectionColors(
+                            handleColor = ITaxCixPaletaColors.Blue1,
+                            backgroundColor = ITaxCixPaletaColors.Blue3
+                        )
                     )
                 )
 
@@ -196,6 +206,7 @@ fun RegisterValidationDriverScreen(
                     value = plate,
                     onValueChange = { viewModel.updatePlate(it) },
                     label = { Text(text = "Ingresa tu placa") },
+                    isError = plateError != null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 5.dp),
@@ -204,7 +215,11 @@ fun RegisterValidationDriverScreen(
                         focusedBorderColor = ITaxCixPaletaColors.Blue1,
                         unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
                         cursorColor = ITaxCixPaletaColors.Blue1,
-                        focusedLabelColor = ITaxCixPaletaColors.Blue1
+                        focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                        selectionColors = TextSelectionColors(
+                            handleColor = ITaxCixPaletaColors.Blue1,
+                            backgroundColor = ITaxCixPaletaColors.Blue3
+                        )
                     )
                 )
             }

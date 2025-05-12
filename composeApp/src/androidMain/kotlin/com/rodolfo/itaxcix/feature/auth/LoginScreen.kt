@@ -1,14 +1,22 @@
 package com.rodolfo.itaxcix.feature.auth
 
+import android.util.Log
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -20,10 +28,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +63,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.rodolfo.itaxcix.R
 import com.rodolfo.itaxcix.data.remote.api.AppModule
+import com.rodolfo.itaxcix.domain.model.LoginResult
+import com.rodolfo.itaxcix.domain.model.User
 import com.rodolfo.itaxcix.feature.auth.viewmodel.LoginViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.RegisterViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
@@ -62,23 +78,92 @@ fun LoginScreenPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    navController: NavHostController = rememberNavController(),
     viewModel: LoginViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return AppModule.provideLoginViewModel() as T
             }
         }
-    )
+    ),
+    onBackClick: () -> Unit = { },
+    onDriverLoginSuccess: () -> Unit = { },
+    onCitizenLoginSuccess: () -> Unit = { },
+    onRegisterClick: () -> Unit = { },
 ) {
 
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val loginState by viewModel.loginState.collectAsState()
+    val username by viewModel.username.collectAsState()
+    val password by viewModel.password.collectAsState()
+
+    val usernameError by viewModel.usernameError.collectAsState()
+    val passwordError by viewModel.passwordError.collectAsState()
 
     var isPassVisible by remember { mutableStateOf(false) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    var isSuccessSnackbar by remember { mutableStateOf(false) }
+
+    LaunchedEffect(key1 = loginState) {
+        when(val state = loginState) {
+            is LoginViewModel.LoginState.Error -> {
+                isSuccessSnackbar = false
+                snackbarHostState.showSnackbar(
+                    message = state.message,
+                    duration = SnackbarDuration.Short
+                )
+                viewModel.onErrorShown()
+            }
+            is LoginViewModel.LoginState.Success -> {
+                isSuccessSnackbar = true
+                snackbarHostState.showSnackbar(
+                    message = state.message,
+                    duration = SnackbarDuration.Short
+                )
+
+                val loginResult = state.user as LoginResult
+                val user = loginResult.user
+
+                if (user.rol.contains("Conductor")) {
+                    onDriverLoginSuccess()
+                } else if (user.rol.contains("Ciudadano")) {
+                    onCitizenLoginSuccess()
+                }
+                viewModel.onSuccessShown()
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    modifier = Modifier.padding(16.dp),
+                    containerColor = if (isSuccessSnackbar) Color(0xFF4CAF50) else Color(0xFFD32F2F),
+                    contentColor = Color.White,
+                    dismissAction = {
+                        IconButton(onClick = { data.dismiss() }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Cerrar",
+                                tint = Color.White
+                            )
+                        }
+                    }
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (isSuccessSnackbar) Icons.Default.Check else Icons.Default.Error,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(text = data.visuals.message)
+                    }
+                }
+            }
+        },
         containerColor = Color.White,
         topBar = {
             TopAppBar(
@@ -89,7 +174,7 @@ fun LoginScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { onBackClick() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Default.ArrowBack,
                             contentDescription = stringResource(R.string.back),
@@ -130,8 +215,9 @@ fun LoginScreen(
 
                 OutlinedTextField(
                     value = username,
-                    onValueChange = { username = it },
+                    onValueChange = { viewModel.updateUsername(it) },
                     label = { Text(text = "Ingresa tu usuario") },
+                    isError = usernameError != null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 10.dp),
@@ -140,19 +226,24 @@ fun LoginScreen(
                         focusedBorderColor = ITaxCixPaletaColors.Blue1,
                         unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
                         cursorColor = ITaxCixPaletaColors.Blue1,
-                        focusedLabelColor = ITaxCixPaletaColors.Blue1
+                        focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                        selectionColors = TextSelectionColors(
+                            handleColor = ITaxCixPaletaColors.Blue1,
+                            backgroundColor = ITaxCixPaletaColors.Blue3
+                        )
                     )
                 )
 
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { password = it },
+                    onValueChange = { viewModel.updatePassword(it) },
                     label = { Text(text = "Ingresa tu contraseña") },
+                    isError = passwordError != null,
                     visualTransformation = if (isPassVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { isPassVisible = !isPassVisible }) {
                             Icon(
-                                imageVector = if (isPassVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                imageVector = if (isPassVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                                 contentDescription = if (isPassVisible) "Ocultar contraseña" else "Mostrar contraseña",
                                 tint = ITaxCixPaletaColors.Blue1
                             )
@@ -169,12 +260,16 @@ fun LoginScreen(
                         focusedBorderColor = ITaxCixPaletaColors.Blue1,
                         unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
                         cursorColor = ITaxCixPaletaColors.Blue1,
-                        focusedLabelColor = ITaxCixPaletaColors.Blue1
+                        focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                        selectionColors = TextSelectionColors(
+                            handleColor = ITaxCixPaletaColors.Blue1,
+                            backgroundColor = ITaxCixPaletaColors.Blue3
+                        )
                     )
                 )
 
                 Button(
-                    onClick = { /* Handle login click */ },
+                    onClick = { viewModel.login() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 12.dp),
@@ -217,8 +312,13 @@ fun LoginScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.BottomCenter),
-                style = MaterialTheme.typography.bodyMedium
+                    .align(Alignment.BottomCenter)
+                    .clickable (
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onRegisterClick() },
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
             )
         }
     }

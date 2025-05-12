@@ -5,6 +5,7 @@ import com.rodolfo.itaxcix.data.remote.dto.UserDTO
 import com.rodolfo.itaxcix.data.remote.api.ApiService
 import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.DriverRegisterRequestDTO
+import com.rodolfo.itaxcix.domain.model.LoginResult
 import com.rodolfo.itaxcix.domain.model.RegisterDriverResult
 import com.rodolfo.itaxcix.domain.model.RegisterResult
 import com.rodolfo.itaxcix.domain.model.User
@@ -38,8 +39,20 @@ class UserRepositoryImpl(private val apiService: ApiService) : UserRepository {
         )
     }
 
-    override suspend fun login(username: String, password: String): User {
-        return apiService.login(username, password).toDomain()
+    override suspend fun login(username: String, password: String): LoginResult {
+        val response = apiService.login(username, password)
+        val user = User(
+            id = response.user.user.id.toString(),
+            nickname = response.user.user.alias,
+            name = "",
+            email = "",
+            phone = "",
+            address = "",
+            city = "",
+            country = "",
+            rol = response.user.user.roles.toString()
+        )
+        return LoginResult(message =  response.message, user = user)
     }
 
     // Funciones de extensión para mapeo

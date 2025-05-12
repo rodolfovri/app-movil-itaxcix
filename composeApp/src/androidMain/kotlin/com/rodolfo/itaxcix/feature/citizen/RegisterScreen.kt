@@ -2,6 +2,8 @@ package com.rodolfo.itaxcix.feature.citizen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -73,6 +76,7 @@ import com.rodolfo.itaxcix.data.remote.api.AppModule
 import com.rodolfo.itaxcix.feature.auth.viewmodel.RegisterViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 import com.rodolfo.itaxcix.ui.MyColors
+import kotlinx.coroutines.delay
 
 @Preview
 @Composable
@@ -91,6 +95,8 @@ fun RegisterCitizenScreen(
         }
     ),
     onBackClick: () -> Unit = {},
+    onRegisterSuccess: () -> Unit = {},
+    onLoginClick: () -> Unit = {}
 ) {
 
     // Recolectar estados
@@ -142,6 +148,8 @@ fun RegisterCitizenScreen(
                     message = "Registro exitoso",
                     duration = SnackbarDuration.Short
                 )
+                delay(1500) // Esperar 2 segundos antes de cerrar el Snackbar
+                onRegisterSuccess()
                 viewModel.onSuccessShown()
             }
             else -> {}
@@ -247,7 +255,11 @@ fun RegisterCitizenScreen(
                             focusedBorderColor = ITaxCixPaletaColors.Blue1,
                             unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
                             cursorColor = ITaxCixPaletaColors.Blue1,
-                            focusedLabelColor = ITaxCixPaletaColors.Blue1
+                            focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                            selectionColors = TextSelectionColors(
+                                handleColor = ITaxCixPaletaColors.Blue1,
+                                backgroundColor = ITaxCixPaletaColors.Blue3
+                            )
                         )
                     )
 
@@ -260,7 +272,7 @@ fun RegisterCitizenScreen(
                         trailingIcon = {
                             IconButton(onClick = { isPassVisible = !isPassVisible }) {
                                 Icon(
-                                    imageVector = if (isPassVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                                    imageVector = if (isPassVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                                     contentDescription = if (isPassVisible) "Ocultar contraseña" else "Mostrar contraseña",
                                     tint = ITaxCixPaletaColors.Blue1
                                 )
@@ -274,7 +286,11 @@ fun RegisterCitizenScreen(
                             focusedBorderColor = ITaxCixPaletaColors.Blue1,
                             unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
                             cursorColor = ITaxCixPaletaColors.Blue1,
-                            focusedLabelColor = ITaxCixPaletaColors.Blue1
+                            focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                            selectionColors = TextSelectionColors(
+                                handleColor = ITaxCixPaletaColors.Blue1,
+                                backgroundColor = ITaxCixPaletaColors.Blue3
+                            )
                         )
                     )
 
@@ -300,7 +316,11 @@ fun RegisterCitizenScreen(
                             focusedBorderColor = ITaxCixPaletaColors.Blue1,
                             unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
                             cursorColor = ITaxCixPaletaColors.Blue1,
-                            focusedLabelColor = ITaxCixPaletaColors.Blue1
+                            focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                            selectionColors = TextSelectionColors(
+                                handleColor = ITaxCixPaletaColors.Blue1,
+                                backgroundColor = ITaxCixPaletaColors.Blue3
+                            )
                         )
                     )
 
@@ -400,7 +420,11 @@ fun RegisterCitizenScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 20.dp)
-                    .align(Alignment.BottomCenter),
+                    .align(Alignment.BottomCenter)
+                    .clickable (
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onLoginClick() },
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center
             )
@@ -413,7 +437,7 @@ fun RegisterCitizenScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(120.dp),
+                        modifier = Modifier.size(50.dp),
                         strokeWidth = 8.dp,
                         color = ITaxCixPaletaColors.Blue1
                     )

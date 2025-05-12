@@ -12,4 +12,5 @@ data class UserDTO(
     val address: String? = null,
     val city: String? = null,
     val country: String? = null,
+    val rol: String? = null,
 )

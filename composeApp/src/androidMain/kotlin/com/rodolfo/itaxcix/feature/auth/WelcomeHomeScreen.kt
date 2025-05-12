@@ -95,7 +95,7 @@ fun WelcomeHomeScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 25.dp, vertical = 20.dp),
+                    .padding(horizontal = 25.dp, vertical = 30.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Button(

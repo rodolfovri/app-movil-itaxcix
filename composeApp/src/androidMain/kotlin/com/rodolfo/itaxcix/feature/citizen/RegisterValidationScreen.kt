@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -188,7 +189,11 @@ fun RegisterValidationCitizenScreen(
                         focusedBorderColor = ITaxCixPaletaColors.Blue1,
                         unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
                         cursorColor = ITaxCixPaletaColors.Blue1,
-                        focusedLabelColor = ITaxCixPaletaColors.Blue1
+                        focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                        selectionColors = TextSelectionColors(
+                            handleColor = ITaxCixPaletaColors.Blue1,
+                            backgroundColor = ITaxCixPaletaColors.Blue3
+                        )
                     )
                 )
             }
