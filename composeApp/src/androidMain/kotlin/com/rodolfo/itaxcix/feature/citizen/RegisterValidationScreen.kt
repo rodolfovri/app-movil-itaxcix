@@ -79,7 +79,6 @@ fun RegisterValidationCitizenScreen(
     LaunchedEffect(validationState) {
         when (val state = validationState) {
             is RegisterValidationViewModel.ValidationState.Success -> {
-                // Pasar los valores validados a la siguiente pantalla
                 onRegisterClick(state.documentTypeId, state.document)
                 viewModel.onSuccessNavigated()
             }

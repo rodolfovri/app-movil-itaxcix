@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
@@ -94,6 +95,8 @@ fun RegisterDriverScreen(
 
     // Recolectar estados
     val registerState by viewModel.registerState.collectAsState()
+    val focusManager = LocalFocusManager.current
+    val isLoading = registerState is RegisterDriverViewModel.RegisterState.Loading
     val documentTypeId by viewModel.documentTypeId.collectAsState()
     val document by viewModel.document.collectAsState()
     val alias by viewModel.alias.collectAsState()
@@ -149,290 +152,314 @@ fun RegisterDriverScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                // Personalizar el Snackbar según el estado
-                Snackbar(
-                    modifier = Modifier.padding(16.dp),
-                    containerColor = if (isSuccessSnackbar) Color(0xFF4CAF50) else Color(0xFFD32F2F),
-                    contentColor = Color.White,
-                    dismissAction = {
-                        IconButton(onClick = { data.dismiss() }) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState) { data ->
+                    // Personalizar el Snackbar según el estado
+                    Snackbar(
+                        modifier = Modifier.padding(16.dp),
+                        containerColor = if (isSuccessSnackbar) Color(0xFF4CAF50) else Color(0xFFD32F2F),
+                        contentColor = Color.White,
+                        dismissAction = {
+                            IconButton(onClick = { data.dismiss() }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cerrar",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Cerrar",
-                                tint = Color.White
+                                imageVector = if (isSuccessSnackbar) Icons.Default.Check else Icons.Default.Error,
+                                contentDescription = if (isSuccessSnackbar) "Éxito" else "Error",
+                                tint = Color.White,
+                                modifier = Modifier.padding(end = 8.dp)
                             )
+                            Text(text = data.visuals.message)
                         }
                     }
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if (isSuccessSnackbar) Icons.Default.Check else Icons.Default.Error,
-                            contentDescription = if (isSuccessSnackbar) "Éxito" else "Error",
-                            tint = Color.White,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text(text = data.visuals.message)
-                    }
                 }
-            }
-        },
-        containerColor = Color.White,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "",
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { onBackClick() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
+            },
+            containerColor = Color.White,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "",
+                            modifier = Modifier.fillMaxWidth()
                         )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { onBackClick() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                                contentDescription = stringResource(R.string.back),
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.White
+                    )
                 )
-            )
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(30.dp)
-        ) {
-            Column(
+            }
+        ) { padding ->
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxSize(), // Para que ocupe toda la altura disponible
-                verticalArrangement = Arrangement.SpaceBetween // Para distribuir los elementos verticalmente
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(30.dp)
             ) {
-                // Contenedor principal del formulario
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .fillMaxSize(), // Para que ocupe toda la altura disponible
+                    verticalArrangement = Arrangement.SpaceBetween // Para distribuir los elementos verticalmente
                 ) {
-                    Text(
-                        text = "¡Tu viaje comienza aquí!",
+                    // Contenedor principal del formulario
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = "Empieza tu experiencia de viaje con nosotros.",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 30.dp),
-                    )
-
-                    OutlinedTextField(
-                        value = alias,
-                        onValueChange = { viewModel.updateAlias(it) },
-                        label = { Text(text = "Ingresa tu alias") },
-                        isError = aliasError != null,
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ITaxCixPaletaColors.Blue1,
-                            unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
-                            cursorColor = ITaxCixPaletaColors.Blue1,
-                            focusedLabelColor = ITaxCixPaletaColors.Blue1,
-                            selectionColors = TextSelectionColors(
-                                handleColor = ITaxCixPaletaColors.Blue1,
-                                backgroundColor = ITaxCixPaletaColors.Blue3
-                            )
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { viewModel.updatePassword(it) },
-                        label = { Text(text = "Ingresa tu contraseña") },
-                        isError = passwordError != null,
-                        visualTransformation = if (isPassVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { isPassVisible = !isPassVisible }) {
-                                Icon(
-                                    imageVector = if (isPassVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                    contentDescription = if (isPassVisible) "Ocultar contraseña" else "Mostrar contraseña",
-                                    tint = ITaxCixPaletaColors.Blue1
-                                )
-                            }
-                        },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ITaxCixPaletaColors.Blue1,
-                            unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
-                            cursorColor = ITaxCixPaletaColors.Blue1,
-                            focusedLabelColor = ITaxCixPaletaColors.Blue1,
-                            selectionColors = TextSelectionColors(
-                                handleColor = ITaxCixPaletaColors.Blue1,
-                                backgroundColor = ITaxCixPaletaColors.Blue3
-                            )
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = contact,
-                        onValueChange = {
-                            viewModel.updateContact(it)
-                            viewModel.updateContactTypeId(if (selectedContactMethod == "Email") 1 else 2)
-                        },
-                        label = { Text(contactMethodLabel) },
-                        isError = contactError != null,
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = if (selectedContactMethod == "Email") {
-                                KeyboardType.Email
-                            } else {
-                                KeyboardType.Phone
-                            }
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ITaxCixPaletaColors.Blue1,
-                            unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
-                            cursorColor = ITaxCixPaletaColors.Blue1,
-                            focusedLabelColor = ITaxCixPaletaColors.Blue1,
-                            selectionColors = TextSelectionColors(
-                                handleColor = ITaxCixPaletaColors.Blue1,
-                                backgroundColor = ITaxCixPaletaColors.Blue3
-                            )
-                        )
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .background(color = Color.White, shape = RectangleShape)
-                                .padding(vertical = 8.dp, horizontal = 8.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(
-                                    selected = selectedContactMethod == "Email",
-                                    onClick = {
-                                        selectedContactMethod = "Email"
-                                        viewModel.updateContactTypeId(1)
-                                        viewModel.updateContact("")
-                                    },
-                                    colors = RadioButtonDefaults.colors(
-                                        selectedColor = ITaxCixPaletaColors.Blue1,
-                                        unselectedColor = ITaxCixPaletaColors.Blue1
-                                    )
-                                )
-                                Text(
-                                    text = "Email",
-                                    color = ITaxCixPaletaColors.Blue1,
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .background(color = Color.White, shape = RectangleShape)
-                                .padding(vertical = 8.dp, horizontal = 8.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(
-                                    selected = selectedContactMethod == "Teléfono",
-                                    onClick = {
-                                        selectedContactMethod = "Teléfono"
-                                        viewModel.updateContactTypeId(2)
-                                        viewModel.updateContact("")
-                                    },
-                                    colors = RadioButtonDefaults.colors(
-                                        selectedColor = ITaxCixPaletaColors.Blue1,
-                                        unselectedColor = ITaxCixPaletaColors.Blue1
-                                    )
-                                )
-                                Text(
-                                    text = "Teléfono",
-                                    color = ITaxCixPaletaColors.Blue1,
-                                )
-                            }
-                        }
-                    }
-
-                    Button(
-                        onClick = { viewModel.registerDriver() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp),
-                        shape = RectangleShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ITaxCixPaletaColors.Blue1,
-                            contentColor = Color.White
-                        )
                     ) {
                         Text(
-                            text = "Registrarse",
-                            style = MaterialTheme.typography.labelLarge,
-                            textAlign = TextAlign.Center,
+                            text = "¡Tu viaje comienza aquí!",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp)
+                                .padding(bottom = 8.dp),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
                         )
-                    }
 
+                        Text(
+                            text = "Empieza tu experiencia de viaje con nosotros.",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 30.dp),
+                        )
+
+                        OutlinedTextField(
+                            value = alias,
+                            onValueChange = { viewModel.updateAlias(it) },
+                            label = { Text(text = "Ingresa tu alias") },
+                            isError = aliasError != null,
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ITaxCixPaletaColors.Blue1,
+                                unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
+                                cursorColor = ITaxCixPaletaColors.Blue1,
+                                focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                                selectionColors = TextSelectionColors(
+                                    handleColor = ITaxCixPaletaColors.Blue1,
+                                    backgroundColor = ITaxCixPaletaColors.Blue3
+                                )
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { viewModel.updatePassword(it) },
+                            label = { Text(text = "Ingresa tu contraseña") },
+                            isError = passwordError != null,
+                            visualTransformation = if (isPassVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { isPassVisible = !isPassVisible }) {
+                                    Icon(
+                                        imageVector = if (isPassVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                        contentDescription = if (isPassVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                                        tint = ITaxCixPaletaColors.Blue1
+                                    )
+                                }
+                            },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ITaxCixPaletaColors.Blue1,
+                                unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
+                                cursorColor = ITaxCixPaletaColors.Blue1,
+                                focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                                selectionColors = TextSelectionColors(
+                                    handleColor = ITaxCixPaletaColors.Blue1,
+                                    backgroundColor = ITaxCixPaletaColors.Blue3
+                                )
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = contact,
+                            onValueChange = {
+                                viewModel.updateContact(it)
+                                viewModel.updateContactTypeId(if (selectedContactMethod == "Email") 1 else 2)
+                            },
+                            label = { Text(contactMethodLabel) },
+                            isError = contactError != null,
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = if (selectedContactMethod == "Email") {
+                                    KeyboardType.Email
+                                } else {
+                                    KeyboardType.Phone
+                                }
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ITaxCixPaletaColors.Blue1,
+                                unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
+                                cursorColor = ITaxCixPaletaColors.Blue1,
+                                focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                                selectionColors = TextSelectionColors(
+                                    handleColor = ITaxCixPaletaColors.Blue1,
+                                    backgroundColor = ITaxCixPaletaColors.Blue3
+                                )
+                            )
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .background(color = Color.White, shape = RectangleShape)
+                                    .padding(vertical = 8.dp, horizontal = 8.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(
+                                        selected = selectedContactMethod == "Email",
+                                        onClick = {
+                                            selectedContactMethod = "Email"
+                                            viewModel.updateContactTypeId(1)
+                                            viewModel.updateContact("")
+                                        },
+                                        colors = RadioButtonDefaults.colors(
+                                            selectedColor = ITaxCixPaletaColors.Blue1,
+                                            unselectedColor = ITaxCixPaletaColors.Blue1
+                                        )
+                                    )
+                                    Text(
+                                        text = "Email",
+                                        color = ITaxCixPaletaColors.Blue1,
+                                    )
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .background(color = Color.White, shape = RectangleShape)
+                                    .padding(vertical = 8.dp, horizontal = 8.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(
+                                        selected = selectedContactMethod == "Teléfono",
+                                        onClick = {
+                                            selectedContactMethod = "Teléfono"
+                                            viewModel.updateContactTypeId(2)
+                                            viewModel.updateContact("")
+                                        },
+                                        colors = RadioButtonDefaults.colors(
+                                            selectedColor = ITaxCixPaletaColors.Blue1,
+                                            unselectedColor = ITaxCixPaletaColors.Blue1
+                                        )
+                                    )
+                                    Text(
+                                        text = "Teléfono",
+                                        color = ITaxCixPaletaColors.Blue1,
+                                    )
+                                }
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                focusManager.clearFocus()
+                                viewModel.registerDriver()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            shape = RectangleShape,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ITaxCixPaletaColors.Blue1,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                text = "Registrarse",
+                                style = MaterialTheme.typography.labelLarge,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            )
+                        }
+
+                    }
                 }
-            }
 
-            // Texto "¿Ya estás registrado?" en la parte inferior
-            Text(
-                text = buildAnnotatedString {
-                    append("¿Ya estás registrado? ")
-                    withStyle(
-                        style = MaterialTheme.typography.labelLarge.toSpanStyle()
-                            .copy(color = ITaxCixPaletaColors.Blue1)
-                    ) {
-                        append("Inicia Sesión")
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 20.dp)
-                    .align(Alignment.BottomCenter)
-                    .clickable (
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { onLoginClick() },
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center
-            )
-
-            // ⬇ Esto se muestra encima de todo cuando está cargando
-            if (registerState is RegisterDriverViewModel.RegisterState.Loading) {
-                Box(
+                // Texto "¿Ya estás registrado?" en la parte inferior
+                Text(
+                    text = buildAnnotatedString {
+                        append("¿Ya estás registrado? ")
+                        withStyle(
+                            style = MaterialTheme.typography.labelLarge.toSpanStyle()
+                                .copy(color = ITaxCixPaletaColors.Blue1)
+                        ) {
+                            append("Inicia Sesión")
+                        }
+                    },
                     modifier = Modifier
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(top = 20.dp)
+                        .align(Alignment.BottomCenter)
+                        .clickable (
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { onLoginClick() },
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        // Overlay bloqueador de interacciones cuando está cargando
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = true,
+                        onClick = { /* Captura todos los clics pero no hace nada */ }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(50.dp),
-                        strokeWidth = 8.dp,
-                        color = ITaxCixPaletaColors.Blue1
+                        modifier = Modifier.size(60.dp),
+                        color = ITaxCixPaletaColors.Blue1,
+                        strokeWidth = 5.dp
+                    )
+                    Text(
+                        text = "Procesando solicitud...",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 16.dp)
                     )
                 }
             }

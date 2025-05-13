@@ -1,0 +1,119 @@
+package com.rodolfo.itaxcix.feature.auth.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.rodolfo.itaxcix.domain.repository.UserRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+class RecoveryViewModel (
+    private val userRepository: UserRepository,
+): ViewModel() {
+
+    private val _recoveryState = MutableStateFlow<RecoveryState>(RecoveryState.Initial)
+    val recoveryState: StateFlow<RecoveryState> = _recoveryState.asStateFlow()
+
+    private val _contact = MutableStateFlow("")
+    private val _contactTypeId = MutableStateFlow(1)
+
+    val contact: StateFlow<String> = _contact
+    val contactTypeId: StateFlow<Int> = _contactTypeId
+
+    private val _contactError = MutableStateFlow<String?>(null)
+    private val _contactTypeError = MutableStateFlow<String?>(null)
+
+    val contactError: StateFlow<String?> = _contactError.asStateFlow()
+    val contactTypeError: StateFlow<String?> = _contactTypeError.asStateFlow()
+
+    fun updateContact(value: String) {
+        _contact.value = value
+        resetStateIfError()
+    }
+
+    fun updateContactTypeId(value: Int) {
+        _contactTypeId.value = value
+        resetStateIfError()
+    }
+
+    fun recoverPassword() {
+        _recoveryState.value = RecoveryState.Loading
+
+        val (isValid, errorMessage) = validateFields()
+        if (!isValid) {
+            _recoveryState.value = RecoveryState.Error(errorMessage ?: "Por favor, corrija los errores en el formulario")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _recoveryState.value = RecoveryState.Loading
+
+                val contactValue = if(_contactTypeId.value == 2 && !_contact.value.startsWith("+51")) {
+                    "+51${_contact.value}"
+                } else {
+                    _contact.value
+                }
+
+                val result = userRepository.recovery(
+                    contactTypeId = _contactTypeId.value,
+                    contact = contactValue
+                )
+                _recoveryState.value = RecoveryState.Success(result.message)
+            } catch (e: Exception) {
+                _recoveryState.value = RecoveryState.Error(e.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    private fun resetStateIfError() {
+        if (_recoveryState.value is RecoveryState.Error) {
+            _recoveryState.value = RecoveryState.Initial
+        }
+    }
+
+    private fun validateFields(): Pair<Boolean, String?> {
+        val errorMessages = mutableListOf<String>()
+        var isValid = true
+
+        if (_contact.value.isEmpty()) {
+            _contactError.value = "El campo de contacto no puede estar vacío"
+            errorMessages.add("• El campo de contacto no puede estar vacío")
+            isValid = false
+        } else {
+            _contactError.value = null
+        }
+
+        if (_contactTypeId.value == 0) {
+            _contactTypeError.value = "Seleccione un tipo de contacto"
+            errorMessages.add("• Seleccione un tipo de contacto")
+            isValid = false
+        } else {
+            _contactTypeError.value = null
+        }
+
+        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
+    }
+
+    fun onErrorShown() {
+        if (_recoveryState.value is RecoveryState.Error) {
+            _recoveryState.value = RecoveryState.Initial
+        }
+    }
+
+    fun onSuccessShown() {
+        if (_recoveryState.value is RecoveryState.Success) {
+            _recoveryState.value = RecoveryState.Initial
+        }
+    }
+
+
+
+    sealed class RecoveryState {
+        object Initial : RecoveryState()
+        object Loading : RecoveryState()
+        data class Success(val message: String) : RecoveryState()
+        data class Error(val message: String) : RecoveryState()
+    }
+}

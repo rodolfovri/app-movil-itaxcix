@@ -52,11 +52,14 @@ class LoginViewModel(
     }
 
     // Método para validar los campos
-    private fun validateFields(): Boolean {
+    // En LoginViewModel
+    private fun validateFields(): Pair<Boolean, String?> {
+        val errorMessages = mutableListOf<String>()
         var isValid = true
 
         if (_username.value.isBlank()) {
             _usernameError.value = "El nombre de usuario no puede estar vacío"
+            errorMessages.add("• El nombre de usuario no puede estar vacío")
             isValid = false
         } else {
             _usernameError.value = null
@@ -64,20 +67,22 @@ class LoginViewModel(
 
         if (_password.value.isBlank()) {
             _passwordError.value = "La contraseña no puede estar vacía"
+            errorMessages.add("• La contraseña no puede estar vacía")
             isValid = false
         } else {
             _passwordError.value = null
         }
 
-        return isValid
+        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
     }
 
     // Método para iniciar sesión
     fun login() {
         _loginState.value = LoginState.Loading
 
-        if (!validateFields()) {
-            _loginState.value = LoginState.Error("Por favor, completa todos los campos")
+        val (isValid, errorMessage) = validateFields()
+        if (!isValid) {
+            _loginState.value = LoginState.Error(errorMessage ?: "Por favor, completa todos los campos")
             return
         }
 

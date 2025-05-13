@@ -91,17 +91,21 @@ class RegisterDriverViewModel(
     }
 
     // Método para validar campos antes de registrar
-    private fun validateFields(): Boolean {
+    private fun validateFields(): Pair<Boolean, String?> {
+        val errorMessages = mutableListOf<String>()
         var isValid = true
 
         if (_alias.value.isBlank()) {
             _aliasError.value = "Alias no puede estar vacío"
+            errorMessages.add("• Alias no puede estar vacío")
             isValid = false
         } else if (_alias.value.length < 3) {
             _aliasError.value = "El alias debe tener al menos 3 caracteres"
+            errorMessages.add("• El alias debe tener al menos 3 caracteres")
             isValid = false
         } else if (_alias.value.length > 20) {
             _aliasError.value = "El alias no puede tener más de 20 caracteres"
+            errorMessages.add("• El alias no puede tener más de 20 caracteres")
             isValid = false
         } else {
             _aliasError.value = null
@@ -109,21 +113,27 @@ class RegisterDriverViewModel(
 
         if (_password.value.isBlank()) {
             _passwordError.value = "La contraseña no puede estar vacía"
+            errorMessages.add("• La contraseña no puede estar vacía")
             isValid = false
         } else if (_password.value.length < 8) {
             _passwordError.value = "La contraseña debe tener al menos 8 caracteres"
+            errorMessages.add("• La contraseña debe tener al menos 8 caracteres")
             isValid = false
         } else if (!_password.value.contains(Regex("[A-Z]"))) {
             _passwordError.value = "La contraseña debe contener al menos una letra mayúscula"
+            errorMessages.add("• La contraseña debe contener al menos una letra mayúscula")
             isValid = false
         } else if (!_password.value.contains(Regex("[a-z]"))) {
             _passwordError.value = "La contraseña debe contener al menos una letra minúscula"
+            errorMessages.add("• La contraseña debe contener al menos una letra minúscula")
             isValid = false
         } else if (!_password.value.contains(Regex("[0-9]"))) {
             _passwordError.value = "La contraseña debe contener al menos un número"
+            errorMessages.add("• La contraseña debe contener al menos un número")
             isValid = false
         } else if (!_password.value.contains(Regex("[^A-Za-z0-9]"))) {
             _passwordError.value = "La contraseña debe contener al menos un carácter especial (@, #, etc.)"
+            errorMessages.add("• La contraseña debe contener al menos un carácter especial (@, #, etc.)")
             isValid = false
         } else {
             _passwordError.value = null
@@ -131,25 +141,41 @@ class RegisterDriverViewModel(
 
         if (_contact.value.isBlank()) {
             _contactError.value = "El contacto no puede estar vacío"
+            errorMessages.add("• El contacto no puede estar vacío")
             isValid = false
         } else if (_contactTypeId.value == 1 && !_contact.value.contains("@")) {
             _contactError.value = "El contacto debe ser un correo electrónico válido"
+            errorMessages.add("• El contacto debe ser un correo electrónico válido")
             isValid = false
         } else if (_contactTypeId.value == 2 && !_contact.value.matches(Regex("^[0-9]{9}$"))) {
             _contactError.value = "El contacto debe ser un número de teléfono válido"
+            errorMessages.add("• El contacto debe ser un número de teléfono válido")
             isValid = false
         } else {
             _contactError.value = null
         }
 
-        return isValid
+        if (_licensePlate.value.isBlank()) {
+            _licensePlateError.value = "La placa no puede estar vacía"
+            errorMessages.add("• La placa no puede estar vacía")
+            isValid = false
+        } else if (!_licensePlate.value.matches(Regex("^[A-Z0-9]{6,7}$"))) {
+            _licensePlateError.value = "Formato de placa inválido"
+            errorMessages.add("• Formato de placa inválido")
+            isValid = false
+        } else {
+            _licensePlateError.value = null
+        }
+
+        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
     }
 
     fun registerDriver() {
         _registerState.value = RegisterState.Initial
 
-        if (!validateFields()) {
-            _registerState.value = RegisterState.Error("Por favor, corrige los errores antes de continuar.")
+        val (isValid, errorMessage) = validateFields()
+        if (!isValid) {
+            _registerState.value = RegisterState.Error(errorMessage ?: "Por favor, corrige los errores antes de continuar.")
             return
         }
 

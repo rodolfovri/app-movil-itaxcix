@@ -4,7 +4,10 @@ import com.rodolfo.itaxcix.data.remote.ApiServiceImpl
 import com.rodolfo.itaxcix.data.repository.UserRepositoryImpl
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 import com.rodolfo.itaxcix.feature.auth.viewmodel.LoginViewModel
+import com.rodolfo.itaxcix.feature.auth.viewmodel.RecoveryViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.RegisterViewModel
+import com.rodolfo.itaxcix.feature.auth.viewmodel.ResetPasswordViewModel
+import com.rodolfo.itaxcix.feature.auth.viewmodel.VerifyCodeViewModel
 import com.rodolfo.itaxcix.feature.driver.viewModel.RegisterDriverViewModel
 
 object AppModule {
@@ -26,5 +29,17 @@ object AppModule {
 
     fun provideLoginViewModel(): LoginViewModel {
         return LoginViewModel(userRepository)
+    }
+
+    fun provideRecoveryViewModel(): RecoveryViewModel {
+        return RecoveryViewModel(userRepository)
+    }
+
+    fun provideVerifyCodeViewModel(): VerifyCodeViewModel {
+        return VerifyCodeViewModel(userRepository)
+    }
+
+    fun provideResetPasswordViewModel(): ResetPasswordViewModel {
+        return ResetPasswordViewModel(userRepository)
     }
 }

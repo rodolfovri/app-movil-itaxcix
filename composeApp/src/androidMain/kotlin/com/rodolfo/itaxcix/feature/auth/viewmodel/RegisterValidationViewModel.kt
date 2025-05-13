@@ -36,44 +36,62 @@ class RegisterValidationViewModel : ViewModel() {
         validateDocument()
     }
 
-    // Validación según tipo de documento
-    private fun validateDocument(): Boolean {
-        when (_documentTypeId.value) {
-            1 -> { // DNI
-                if (!_document.value.matches(Regex("^[0-9]{8}$"))) {
-                    _documentError.value = "El DNI debe tener 8 dígitos numéricos"
-                    return false
+    // Validación según tipo de documento con mensajes agrupados
+    private fun validateDocument(): Pair<Boolean, String?> {
+        val errorMessages = mutableListOf<String>()
+        var isValid = true
+
+        if (_document.value.isBlank()) {
+            _documentError.value = "El documento no puede estar vacío"
+            errorMessages.add("• El documento no puede estar vacío")
+            isValid = false
+        } else {
+            when (_documentTypeId.value) {
+                1 -> { // DNI
+                    if (!_document.value.matches(Regex("^[0-9]{8}$"))) {
+                        _documentError.value = "El DNI debe tener 8 dígitos numéricos"
+                        errorMessages.add("• El DNI debe tener 8 dígitos numéricos")
+                        isValid = false
+                    }
+                }
+                2 -> { // Pasaporte
+                    if (!_document.value.matches(Regex("^[A-Z0-9]{6,12}$"))) {
+                        _documentError.value = "El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos"
+                        errorMessages.add("• El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos")
+                        isValid = false
+                    }
+                }
+                3 -> { // Carnet de Extranjería
+                    if (!_document.value.matches(Regex("^[0-9]{9}$"))) {
+                        _documentError.value = "El carnet de extranjería debe tener 9 dígitos"
+                        errorMessages.add("• El carnet de extranjería debe tener 9 dígitos")
+                        isValid = false
+                    }
+                }
+                4 -> { // RUC
+                    if (!_document.value.matches(Regex("^[0-9]{11}$"))) {
+                        _documentError.value = "El RUC debe tener 11 dígitos numéricos"
+                        errorMessages.add("• El RUC debe tener 11 dígitos numéricos")
+                        isValid = false
+                    }
                 }
             }
-            2 -> { // Pasaporte
-                if (!_document.value.matches(Regex("^[A-Z0-9]{6,12}$"))) {
-                    _documentError.value = "El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos"
-                    return false
-                }
-            }
-            3 -> { // Carnet de Extranjería
-                if (!_document.value.matches(Regex("^[0-9]{9}$"))) {
-                    _documentError.value = "El carnet de extranjería debe tener 9 dígitos"
-                    return false
-                }
-            }
-            4 -> { // RUC
-                if (!_document.value.matches(Regex("^[0-9]{11}$"))) {
-                    _documentError.value = "El RUC debe tener 11 dígitos numéricos"
-                    return false
-                }
+
+            if (isValid) {
+                _documentError.value = null
             }
         }
-        _documentError.value = null
-        return true
+
+        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
     }
 
-    // Validar y continuar
+    // Validar y continuar usando el nuevo enfoque con mensajes agrupados
     fun validate() {
-        if (validateDocument()) {
+        val (isValid, errorMessage) = validateDocument()
+        if (isValid) {
             _validationState.value = ValidationState.Success(_documentTypeId.value, _document.value)
         } else {
-            _validationState.value = ValidationState.Error(_documentError.value ?: "Documento inválido")
+            _validationState.value = ValidationState.Error(errorMessage ?: "Documento inválido")
         }
     }
 
@@ -81,7 +99,6 @@ class RegisterValidationViewModel : ViewModel() {
     fun onSuccessNavigated() {
         _validationState.value = ValidationState.Initial
     }
-
 
     // Estados para la pantalla
     sealed class ValidationState {

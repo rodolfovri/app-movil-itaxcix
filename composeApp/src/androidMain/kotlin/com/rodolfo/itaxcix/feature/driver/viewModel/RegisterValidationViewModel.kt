@@ -31,75 +31,97 @@ class RegisterValidationViewModel : ViewModel() {
             "RUC" -> 4
             else -> 1 // DNI por defecto
         }
-        validateDocument() // Revalidar al cambiar el tipo
+        validateFields() // Revalidar al cambiar el tipo
     }
 
     fun updateDocument(value: String) {
         _document.value = value
-        validateDocument()
+        validateFields()
     }
 
     fun updatePlate(value: String) {
         _plate.value = value
-        validatePlate()
+        validateFields()
     }
 
-    private fun validatePlate(): Boolean {
+    // Método de validación unificado que devuelve Pair<Boolean, String?>
+    private fun validateFields(): Pair<Boolean, String?> {
+        val errorMessages = mutableListOf<String>()
+        var isValid = true
+
+        // Validación del documento
+        if (_document.value.isBlank()) {
+            _documentError.value = "El documento no puede estar vacío"
+            errorMessages.add("• El documento no puede estar vacío")
+            isValid = false
+        } else {
+            when (_documentTypeId.value) {
+                1 -> { // DNI
+                    if (!_document.value.matches(Regex("^[0-9]{8}$"))) {
+                        _documentError.value = "El DNI debe tener 8 dígitos numéricos"
+                        errorMessages.add("• El DNI debe tener 8 dígitos numéricos")
+                        isValid = false
+                    } else {
+                        _documentError.value = null
+                    }
+                }
+                2 -> { // Pasaporte
+                    if (!_document.value.matches(Regex("^[A-Z0-9]{6,12}$"))) {
+                        _documentError.value = "El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos"
+                        errorMessages.add("• El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos")
+                        isValid = false
+                    } else {
+                        _documentError.value = null
+                    }
+                }
+                3 -> { // Carnet de Extranjería
+                    if (!_document.value.matches(Regex("^[0-9]{9}$"))) {
+                        _documentError.value = "El carnet de extranjería debe tener 9 dígitos"
+                        errorMessages.add("• El carnet de extranjería debe tener 9 dígitos")
+                        isValid = false
+                    } else {
+                        _documentError.value = null
+                    }
+                }
+                4 -> { // RUC
+                    if (!_document.value.matches(Regex("^[0-9]{11}$"))) {
+                        _documentError.value = "El RUC debe tener 11 dígitos numéricos"
+                        errorMessages.add("• El RUC debe tener 11 dígitos numéricos")
+                        isValid = false
+                    } else {
+                        _documentError.value = null
+                    }
+                }
+            }
+        }
+
+        // Validación de la placa
         if (_plate.value.isBlank()) {
             _plateError.value = "La placa no puede estar vacía"
-            return false
+            errorMessages.add("• La placa no puede estar vacía")
+            isValid = false
+        } else if (!_plate.value.matches(Regex("^[A-Z0-9]{6,7}$"))) {
+            _plateError.value = "Formato de placa inválido"
+            errorMessages.add("• Formato de placa inválido")
+            isValid = false
+        } else {
+            _plateError.value = null
         }
-        else if (_plate.value.length != 6) {
-            _plateError.value = "La placa debe tener 6 carácteres"
-            return false
-        }
-        _plateError.value = null
-        return true
+
+        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
     }
 
-    // Validación según tipo de documento
-    private fun validateDocument(): Boolean {
-        when (_documentTypeId.value) {
-            1 -> { // DNI
-                if (!_document.value.matches(Regex("^[0-9]{8}$"))) {
-                    _documentError.value = "El DNI debe tener 8 dígitos numéricos"
-                    return false
-                }
-            }
-            2 -> { // Pasaporte
-                if (!_document.value.matches(Regex("^[A-Z0-9]{6,12}$"))) {
-                    _documentError.value = "El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos"
-                    return false
-                }
-            }
-            3 -> { // Carnet de Extranjería
-                if (!_document.value.matches(Regex("^[0-9]{9}$"))) {
-                    _documentError.value = "El carnet de extranjería debe tener 9 dígitos"
-                    return false
-                }
-            }
-            4 -> { // RUC
-                if (!_document.value.matches(Regex("^[0-9]{11}$"))) {
-                    _documentError.value = "El RUC debe tener 11 dígitos numéricos"
-                    return false
-                }
-            }
-        }
-        _documentError.value = null
-        return true
-    }
-
-    // Validar documento y placa
+    // Validar usando el nuevo enfoque con mensajes agrupados
     fun validate() {
-        if (validateDocument() && validatePlate()) {
+        val (isValid, errorMessage) = validateFields()
+        if (isValid) {
             _validationState.value = ValidationState.Success(
                 _documentTypeId.value,
                 _document.value,
                 _plate.value
             )
         } else {
-            val errorMessage = _documentError.value ?: _plateError.value ?: "Datos inválidos"
-            _validationState.value = ValidationState.Error(errorMessage)
+            _validationState.value = ValidationState.Error(errorMessage ?: "Datos inválidos")
         }
     }
 
@@ -107,7 +129,6 @@ class RegisterValidationViewModel : ViewModel() {
     fun onSuccessNavigated() {
         _validationState.value = ValidationState.Initial
     }
-
 
     // Estados para la pantalla
     sealed class ValidationState {
