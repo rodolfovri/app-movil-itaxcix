@@ -100,6 +100,10 @@ class RegisterValidationViewModel : ViewModel() {
         _validationState.value = ValidationState.Initial
     }
 
+    fun onErrorShown() {
+        _validationState.value = ValidationState.Initial
+    }
+
     // Estados para la pantalla
     sealed class ValidationState {
         object Initial : ValidationState()

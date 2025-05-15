@@ -144,7 +144,6 @@ fun RegisterDriverScreen(
                     message = "Registro exitoso",
                     duration = SnackbarDuration.Short
                 )
-                delay(1500)
                 onRegisterSuccess()
                 viewModel.onSuccessShown()
             }

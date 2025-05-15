@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.rodolfo.itaxcix.R
@@ -79,14 +80,16 @@ fun RegisterOptionsScreen(
                 Text(
                     text = "¡Bienvenido!",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = ITaxCixPaletaColors.Blue1,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
                 Text(
                     text = "¿Cómo deseas registrarte en la aplicación?",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.Gray
+                    color = Color.Gray,
+
                 )
             }
 
@@ -158,7 +161,7 @@ fun UserOptionCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleLarge,
-                    color = ITaxCixPaletaColors.Blue1
+                    color = Color.Black
                 )
 
                 Text(

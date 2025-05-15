@@ -208,6 +208,27 @@ fun RecoveryScreen(
                             .padding(bottom = 20.dp)
                     )
 
+                    Text(
+                        text = "Recupera tu acceso",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 4.dp),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = "Ingresa tu correo o número de teléfono para enviarte un código de verificación.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        textAlign = TextAlign.Center
+                    )
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -332,7 +353,7 @@ fun RecoveryScreen(
                     )
                 ) {
                     Text(
-                        text = "Recuperar Contraseña",
+                        text = "Enviar código de verificación",
                         style = MaterialTheme.typography.labelLarge,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
