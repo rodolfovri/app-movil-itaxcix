@@ -3,12 +3,15 @@ package com.rodolfo.itaxcix.feature.auth.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodolfo.itaxcix.domain.repository.UserRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class RecoveryViewModel (
+@HiltViewModel
+class RecoveryViewModel @Inject constructor(
     private val userRepository: UserRepository,
 ): ViewModel() {
 

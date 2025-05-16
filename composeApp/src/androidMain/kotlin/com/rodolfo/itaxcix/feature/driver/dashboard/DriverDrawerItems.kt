@@ -23,6 +23,7 @@ data class DrawerItem(
 )
 
 val driverDrawerItems = listOf(
+    DrawerItem("Inicio", Icons.Default.Home, "driverHome"),
     DrawerItem("Perfil", Icons.Default.Person, "driverProfile"),
     DrawerItem("Disponibilidad", Icons.Default.AccessTime, "driverAvailability"),
     DrawerItem("Historial", Icons.Default.History, "driverHistory"),
@@ -30,7 +31,9 @@ val driverDrawerItems = listOf(
 )
 
 @Composable
-fun DriverDrawerContent(onItemClick: (String) -> Unit) {
+fun DriverDrawerContent(
+    currentRoute: String,
+    onItemClick: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -62,6 +65,7 @@ fun DriverDrawerContent(onItemClick: (String) -> Unit) {
         for (item in driverDrawerItems) {
             DrawerItemRow(
                 item = item,
+                isSelected = currentRoute == item.route,
                 onItemClick = onItemClick
             )
             if (item != driverDrawerItems.last()) {
@@ -72,14 +76,21 @@ fun DriverDrawerContent(onItemClick: (String) -> Unit) {
 }
 
 @Composable
-fun DrawerItemRow(item: DrawerItem, onItemClick: (String) -> Unit) {
+fun DrawerItemRow(
+    item: DrawerItem,
+    isSelected: Boolean,
+    onItemClick: (String) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(8.dp))
             .clickable { onItemClick(item.route) }
-            .background(Color.Transparent)
+            .background(
+                if (isSelected) ITaxCixPaletaColors.Blue3.copy(alpha = 0.2f)
+                else Color.Transparent
+            )
             .padding(vertical = 12.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

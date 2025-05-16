@@ -4,8 +4,9 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
 
-class RegisterValidationViewModel : ViewModel() {
+class RegisterValidationViewModel @Inject constructor() : ViewModel() {
 
     // Estados para el formulario
     private val _documentTypeId = MutableStateFlow(1) // DNI por defecto

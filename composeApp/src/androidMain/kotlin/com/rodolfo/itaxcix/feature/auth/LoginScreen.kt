@@ -61,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -83,13 +84,7 @@ fun LoginScreenPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    viewModel: LoginViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return AppModule.provideLoginViewModel() as T
-            }
-        }
-    ),
+    viewModel: LoginViewModel = hiltViewModel(),
     onBackClick: () -> Unit = { },
     onDriverLoginSuccess: () -> Unit = { },
     onCitizenLoginSuccess: () -> Unit = { },

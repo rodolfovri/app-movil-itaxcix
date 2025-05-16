@@ -1,6 +1,7 @@
 package com.rodolfo.itaxcix.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -64,10 +65,13 @@ fun AppNavigation() {
         ) { backStackEntry ->
             val username = backStackEntry.arguments?.getString("username") ?: ""
             val password = backStackEntry.arguments?.getString("password") ?: ""
+            val viewModel = hiltViewModel<LoginViewModel>()
+
+            viewModel.updateUsername(username)
+            viewModel.updatePassword(password)
+
             LoginScreen(
-                viewModel = viewModel(
-                    factory = LoginViewModelFactory(username, password)
-                ),
+                viewModel = viewModel,
                 onBackClick = { navController.navigate(Routes.REGISTER_OPTIONS) },
                 onDriverLoginSuccess = {
                     navController.navigate(Routes.DASHBOARD_DRIVER) {
@@ -114,10 +118,12 @@ fun AppNavigation() {
             val documentTypeId = backStackEntry.arguments?.getInt("documentTypeId") ?: 1
             val document = backStackEntry.arguments?.getString("document") ?: ""
 
+            val viewModel = hiltViewModel<RegisterViewModel>()
+            viewModel.updateDocumentTypeId(documentTypeId)
+            viewModel.updateDocument(document)
+
             RegisterCitizenScreen(
-                viewModel = viewModel(
-                    factory = RegisterViewModelFactory(documentTypeId, document)
-                ),
+                viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
                 onRegisterSuccess = {
                     // Aquí puedes manejar la navegación después de un registro exitoso
@@ -154,10 +160,13 @@ fun AppNavigation() {
             val document = backStackEntry.arguments?.getString("document") ?: ""
             val plate = backStackEntry.arguments?.getString("plate") ?: ""
 
+            val viewModel = hiltViewModel<RegisterDriverViewModel>()
+            viewModel.updateDocumentTypeId(documentTypeId)
+            viewModel.updateDocument(document)
+            viewModel.updateLicensePlate(plate)
+
             RegisterDriverScreen(
-                viewModel = viewModel(
-                    factory = RegisterDriverViewModelFactory(documentTypeId, document, plate)
-                ),
+                viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
                 onRegisterSuccess = {
                     navController.navigate(Routes.LOGIN) {
@@ -181,10 +190,13 @@ fun AppNavigation() {
         ) { backStackEntry ->
             val contactTypeId = backStackEntry.arguments?.getInt("contactTypeId") ?: 1
             val contact = backStackEntry.arguments?.getString("contact") ?: ""
+
+            val viewModel = hiltViewModel<RecoveryViewModel>()
+            viewModel.updateContactTypeId(contactTypeId)
+            viewModel.updateContact(contact)
+
             RecoveryScreen(
-                viewModel = viewModel(
-                    factory = RecoveryViewModelFactory(contactTypeId, contact)
-                ),
+                viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
                 onVerifyClick = { contactTypeId: Int, contact: String ->
                     navController.navigate(
@@ -206,10 +218,12 @@ fun AppNavigation() {
             val contactTypeId = backStackEntry.arguments?.getInt("contactTypeId") ?: 1
             val contact = backStackEntry.arguments?.getString("contact") ?: ""
 
+            val viewModel = hiltViewModel<VerifyCodeViewModel>()
+            viewModel.updateContactTypeId(contactTypeId)
+            viewModel.updateContact(contact)
+
             VerifyCodeScreen(
-                viewModel = viewModel(
-                    factory = VerifyCodeViewModelFactory(contactTypeId, contact)
-                ),
+                viewModel = viewModel,
                 onVerifyCodeSuccess = { userId ->
                     navController.navigate("reset_password/$userId") {
                         launchSingleTop = true // Evitar múltiples instancias de la misma pantalla
@@ -225,10 +239,12 @@ fun AppNavigation() {
             )
         ) { backStackEntry ->
             val userId = backStackEntry.arguments?.getInt("userId") ?: 0
+
+            val viewModel = hiltViewModel<ResetPasswordViewModel>()
+            viewModel.updateUserId(userId.toString())
+
             ResetPasswordScreen(
-                viewModel = viewModel(
-                    factory = ResetPasswordViewModelFactory(userId.toString())
-                ),
+                viewModel = viewModel,
                 onResetSuccess = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.WELCOME) { inclusive = false }
@@ -236,97 +252,5 @@ fun AppNavigation() {
                 },
             )
         }
-    }
-}
-
-class RegisterViewModelFactory(
-    private val documentTypeId: Int,
-    private val document: String
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(RegisterViewModel::class.java)) {
-            val registerViewModel = AppModule.provideRegisterViewModel()
-            // Establecer los valores recibidos de la pantalla anterior
-            registerViewModel.updateDocumentTypeId(documentTypeId)
-            registerViewModel.updateDocument(document)
-            return registerViewModel as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
-class RegisterDriverViewModelFactory(
-    private val documentTypeId: Int,
-    private val document: String,
-    private val plate: String
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(RegisterDriverViewModel::class.java)) {
-            val registerViewModel = AppModule.provideRegisterDriverViewModel()
-            // Establecer los valores recibidos de la pantalla anterior
-            registerViewModel.updateDocumentTypeId(documentTypeId)
-            registerViewModel.updateDocument(document)
-            registerViewModel.updateLicensePlate(plate)
-            return registerViewModel as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
-class LoginViewModelFactory(
-    private val username: String,
-    private val password: String,
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
-            val loginViewModel = AppModule.provideLoginViewModel()
-            loginViewModel.updateUsername(username)
-            loginViewModel.updatePassword(password)
-            return loginViewModel as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
-class RecoveryViewModelFactory(
-    private val contactTypeId: Int,
-    private val contact: String,
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(RecoveryViewModel::class.java)) {
-            val recoveryViewModel = AppModule.provideRecoveryViewModel()
-            recoveryViewModel.updateContactTypeId(contactTypeId)
-            recoveryViewModel.updateContact(contact)
-            return recoveryViewModel as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
-class VerifyCodeViewModelFactory(
-    private val contactTypeId: Int,
-    private val contact: String,
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(VerifyCodeViewModel::class.java)) {
-            val verifyCodeViewModel = AppModule.provideVerifyCodeViewModel()
-            verifyCodeViewModel.updateContactTypeId(contactTypeId)
-            verifyCodeViewModel.updateContact(contact)
-            return verifyCodeViewModel as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
-class ResetPasswordViewModelFactory(
-    private val userId: String,
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ResetPasswordViewModel::class.java)) {
-            val resetPasswordViewModel = AppModule.provideResetPasswordViewModel()
-            resetPasswordViewModel.updateUserId(userId)
-            return resetPasswordViewModel as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -62,13 +63,7 @@ fun ResetPasswordScreenPreview() {
 
 @Composable
 fun ResetPasswordScreen(
-    viewModel: ResetPasswordViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return AppModule.provideResetPasswordViewModel() as T
-            }
-        }
-    ),
+    viewModel: ResetPasswordViewModel = hiltViewModel(),
     onResetSuccess: () -> Unit = {}
 ) {
 

@@ -1,10 +1,13 @@
 package com.rodolfo.itaxcix.feature.driver.viewModel
 
 import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import javax.inject.Inject
 
-class RegisterValidationViewModel : ViewModel() {
+@HiltViewModel
+class RegisterValidationViewModel @Inject constructor() : ViewModel() {
 
     // Estados para el formulario
     private val _documentTypeId = MutableStateFlow(1) // DNI por defecto

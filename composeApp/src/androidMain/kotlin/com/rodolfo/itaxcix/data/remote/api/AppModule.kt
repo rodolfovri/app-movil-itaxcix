@@ -9,37 +9,25 @@ import com.rodolfo.itaxcix.feature.auth.viewmodel.RegisterViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.ResetPasswordViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.VerifyCodeViewModel
 import com.rodolfo.itaxcix.feature.driver.viewModel.RegisterDriverViewModel
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
+@Module
+@InstallIn(SingletonComponent::class)
 object AppModule {
-    private val apiService: ApiService by lazy {
-        ApiServiceImpl(ApiClient.create())
+
+    @Provides
+    @Singleton
+    fun provideApiService(): ApiService {
+        return ApiServiceImpl(ApiClient.create())
     }
 
-    private val userRepository: UserRepository by lazy {
-        UserRepositoryImpl(apiService)
-    }
-
-    fun provideRegisterViewModel(): RegisterViewModel {
-        return RegisterViewModel(userRepository)
-    }
-
-    fun provideRegisterDriverViewModel(): RegisterDriverViewModel {
-        return RegisterDriverViewModel(userRepository)
-    }
-
-    fun provideLoginViewModel(): LoginViewModel {
-        return LoginViewModel(userRepository)
-    }
-
-    fun provideRecoveryViewModel(): RecoveryViewModel {
-        return RecoveryViewModel(userRepository)
-    }
-
-    fun provideVerifyCodeViewModel(): VerifyCodeViewModel {
-        return VerifyCodeViewModel(userRepository)
-    }
-
-    fun provideResetPasswordViewModel(): ResetPasswordViewModel {
-        return ResetPasswordViewModel(userRepository)
+    @Provides
+    @Singleton
+    fun provideUserRepository(apiService: ApiService): UserRepository {
+        return UserRepositoryImpl(apiService)
     }
 }

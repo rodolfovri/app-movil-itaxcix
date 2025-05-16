@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,13 +59,7 @@ fun VerifyCodeScreenPreview() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VerifyCodeScreen(
-    viewModel: VerifyCodeViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return AppModule.provideVerifyCodeViewModel() as T
-            }
-        }
-    ),
+    viewModel: VerifyCodeViewModel = hiltViewModel(),
     onVerifyCodeSuccess: (userId: String) -> Unit = {},
 ) {
 
