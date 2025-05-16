@@ -1,5 +1,8 @@
 package com.rodolfo.itaxcix.data.repository
 
+import android.util.Log
+import com.rodolfo.itaxcix.data.local.PreferencesManager
+import com.rodolfo.itaxcix.data.local.UserData
 import com.rodolfo.itaxcix.data.remote.dto.UserDTO
 import com.rodolfo.itaxcix.data.remote.api.ApiService
 import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
@@ -11,9 +14,14 @@ import com.rodolfo.itaxcix.domain.model.RegisterResult
 import com.rodolfo.itaxcix.domain.model.ResetPasswordResult
 import com.rodolfo.itaxcix.domain.model.User
 import com.rodolfo.itaxcix.domain.model.VerifyCodeResult
+import com.rodolfo.itaxcix.domain.repository.DriverRepository
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 
-class UserRepositoryImpl(private val apiService: ApiService) : UserRepository {
+class UserRepositoryImpl(
+    private val apiService: ApiService,
+    private val driverRepository: DriverRepository,
+    private val preferencesManager: PreferencesManager
+) : UserRepository {
     override suspend fun getUsers(): List<User> {
         return apiService.getUsers().map { it.toDomain() }
     }
@@ -43,17 +51,74 @@ class UserRepositoryImpl(private val apiService: ApiService) : UserRepository {
 
     override suspend fun login(username: String, password: String): LoginResult {
         val response = apiService.login(username, password)
-        val user = User(
-            id = response.user.user.id.toString(),
-            nickname = response.user.user.alias,
+
+        val userId = response.user.user.id.toString()
+        val nickname = response.user.user.alias
+        val roles = response.user.user.roles.toString()
+        val token = response.user.token
+
+        var user = User(
+            id = userId,
+            nickname = nickname,
             name = "",
             email = "",
             phone = "",
             address = "",
             city = "",
             country = "",
-            rol = response.user.user.roles.toString()
+            rol = roles,
+            authToken = token
         )
+
+        preferencesManager.saveUserData(
+            UserData(
+                id = userId.toInt(),
+                name = "",
+                nickname = nickname,
+                email = "",
+                phone = "",
+                address = "",
+                city = "",
+                country = "",
+                role = roles,
+                status = "UNAVAILABLE",
+                isDriverAvailable = false,
+                lastDriverStatusUpdate = null,
+                authToken = token
+            )
+        )
+
+        // Obtener el estado del conductor si el usuario tiene el rol de conductor
+        if (roles.contains("Conductor", ignoreCase = true)) {
+            try {
+                val driverStatus = driverRepository.getDriverStatus(userId.toInt())
+
+                // Actualizar el usuario con el estado del conductor
+                user = user.copy(
+                    isDriverAvailable = driverStatus.isDriverAvailable,
+                    lastDriverStatusUpdate = driverStatus.lastDriverStatusUpdate
+                )
+
+                // También actualizar UserData en las preferencias
+                val currentUserData = preferencesManager.userData.value
+                currentUserData?.let {
+                    preferencesManager.saveUserData(
+                        it.copy(
+                            isDriverAvailable = driverStatus.isDriverAvailable,
+                            lastDriverStatusUpdate = driverStatus.lastDriverStatusUpdate
+                        )
+                    )
+                }
+
+                Log.d("UserRepositoryImpl", "Driver Status: ${driverStatus.isDriverAvailable}")
+                Log.d("UserRepositoryImpl", "Last Driver Status Update: ${driverStatus.lastDriverStatusUpdate}")
+            } catch (e: Exception) {
+                // Manejar el error pero continuar con el inicio de sesión
+                Log.e("UserRepositoryImpl", "Error al obtener estado del conductor: ${e.message}")
+            }
+        }
+
+
         return LoginResult(message =  response.message, user = user)
     }
 

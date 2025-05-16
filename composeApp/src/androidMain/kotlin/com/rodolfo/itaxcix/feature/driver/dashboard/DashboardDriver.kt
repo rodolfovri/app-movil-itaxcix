@@ -1,7 +1,6 @@
 package com.rodolfo.itaxcix.feature.driver.dashboard
 
 import DriverDrawerContent
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -21,13 +20,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.rodolfo.itaxcix.feature.driver.history.DriverHistoryScreen
+import com.rodolfo.itaxcix.feature.driver.home.DriverHomeScreen
+import com.rodolfo.itaxcix.feature.driver.profile.DriverProfileScreen
 import kotlinx.coroutines.launch
 
 @Preview
@@ -41,7 +41,6 @@ fun DashboardDriverScreenPreview() {
 object DriverRoutes {
     const val HOME = "driverHome"
     const val PROFILE = "driverProfile"
-    const val AVAILABILITY = "driverAvailability"
     const val HISTORY = "driverHistory"
 }
 
@@ -58,7 +57,6 @@ fun DashboardDriverScreen(onLogout: () -> Unit = {}) {
     val title = when (currentRoute) {
         DriverRoutes.HOME -> "Inicio"
         DriverRoutes.PROFILE -> "Perfil"
-        DriverRoutes.AVAILABILITY -> "Disponibilidad"
         DriverRoutes.HISTORY -> "Historial"
         else -> "Panel del Conductor"
     }
@@ -113,6 +111,12 @@ fun DriverNavHost(navController: NavHostController) {
     ) {
         composable(DriverRoutes.HOME) {
             DriverHomeScreen()
+        }
+        composable(DriverRoutes.PROFILE) {
+            DriverProfileScreen()
+        }
+        composable(DriverRoutes.HISTORY) {
+            DriverHistoryScreen()
         }
     }
 }

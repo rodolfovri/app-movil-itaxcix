@@ -74,6 +74,7 @@ import com.rodolfo.itaxcix.domain.model.User
 import com.rodolfo.itaxcix.feature.auth.viewmodel.LoginViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.RegisterViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
+import kotlinx.coroutines.delay
 
 @Preview
 @Composable
@@ -97,6 +98,7 @@ fun LoginScreen(
 
     val loginState by viewModel.loginState.collectAsState()
     val isLoading = loginState is LoginViewModel.LoginState.Loading
+    val isRedirecting = loginState is LoginViewModel.LoginState.Success
 
     val username by viewModel.username.collectAsState()
     val password by viewModel.password.collectAsState()
@@ -120,11 +122,7 @@ fun LoginScreen(
             }
             is LoginViewModel.LoginState.Success -> {
                 isSuccessSnackbar = true
-                snackbarHostState.showSnackbar(
-                    message = state.message,
-                    duration = SnackbarDuration.Short
-                )
-
+                delay(1000)
                 val loginResult = state.user as LoginResult
                 val user = loginResult.user
 
@@ -346,11 +344,11 @@ fun LoginScreen(
         }
 
         // Overlay bloqueador de interacciones (transparente) cuando está cargando
-        if (isLoading) {
+        if (isLoading || isRedirecting) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
+                    .background(Color.Black.copy(alpha = 0.7f))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -369,7 +367,7 @@ fun LoginScreen(
                         strokeWidth = 5.dp
                     )
                     Text(
-                        text = "Procesando solicitud...",
+                        text = if (isRedirecting) "Credenciales correctas, redirigiendo..." else "Procesando solicitud...",
                         color = Color.White,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,

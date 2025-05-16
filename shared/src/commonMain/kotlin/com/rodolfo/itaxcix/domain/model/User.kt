@@ -9,5 +9,8 @@ data class User (
     val address: String,
     val city: String,
     val country: String,
-    var rol: String = "",
+    val rol: String = "",
+    val isDriverAvailable: Boolean? = null,
+    val lastDriverStatusUpdate: String? = null,
+    val authToken: String? = null
 )

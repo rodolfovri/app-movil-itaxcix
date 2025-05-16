@@ -14,4 +14,7 @@ object ITaxCixPaletaColors {
 object MyColors {
     val Background1 = Color(0xFFF9F8F9) // Azul principal oscuro
     val Error = Color(0xFFEA4C2D) // Rojo de error
+    val LightRed = Color(0xFFEA4C2D) // Rojo suave
+    val ActivateGreen = Color(0xFF2ECC71)  // Verde suave para activar
+    val DeactivateGray = Color(0xFF95A5A6) // Gris azulado para desactivar
 }

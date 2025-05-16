@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
@@ -30,20 +31,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 
-data class DrawerItem(
+data class CitizenDrawerItem(
     val label: String,
     val icon: ImageVector,
     val route: String
 )
 
 val citizenDrawerItems = listOf(
-    DrawerItem("Perfil", Icons.Default.Person, "citizenProfile"),
-    DrawerItem("Historial de pagos", Icons.Default.History, "paymentHistory"),
-    DrawerItem("Cerrar sesión", Icons.Default.ExitToApp, "logout")
+    CitizenDrawerItem("Inicio", Icons.Default.Home, "citizenHome"),
+    CitizenDrawerItem("Perfil", Icons.Default.Person, "citizenProfile"),
+    CitizenDrawerItem("Historial", Icons.Default.History, "citizenHistory"),
+    CitizenDrawerItem("Cerrar sesión", Icons.Default.ExitToApp, "logout")
 )
 
 @Composable
-fun CitizenDrawerContent(onItemClick: (String) -> Unit) {
+fun CitizenDrawerContent(
+    currentRoute: String,
+    onItemClick: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -75,6 +80,7 @@ fun CitizenDrawerContent(onItemClick: (String) -> Unit) {
         for (item in citizenDrawerItems) {
             DrawerItemRow(
                 item = item,
+                isSelected = currentRoute == item.route,
                 onItemClick = onItemClick
             )
             if (item != citizenDrawerItems.last()) {
@@ -85,14 +91,21 @@ fun CitizenDrawerContent(onItemClick: (String) -> Unit) {
 }
 
 @Composable
-fun DrawerItemRow(item: DrawerItem, onItemClick: (String) -> Unit) {
+fun DrawerItemRow(
+    item: CitizenDrawerItem,
+    isSelected: Boolean,
+    onItemClick: (String) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(8.dp))
             .clickable { onItemClick(item.route) }
-            .background(Color.Transparent)
+            .background(
+                if (isSelected) ITaxCixPaletaColors.Blue3.copy(alpha = 0.2f)
+                else Color.Transparent
+            )
             .padding(vertical = 12.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

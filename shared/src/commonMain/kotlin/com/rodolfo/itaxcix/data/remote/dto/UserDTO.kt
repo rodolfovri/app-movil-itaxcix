@@ -13,4 +13,6 @@ data class UserDTO(
     val city: String? = null,
     val country: String? = null,
     val rol: String? = null,
+    val isDriverAvailable: Boolean? = null,
+    val lastDriverStatusUpdate: String? = null
 )

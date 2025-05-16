@@ -1,9 +1,13 @@
 package com.rodolfo.itaxcix.data.remote
 
+import com.rodolfo.itaxcix.data.local.PreferencesManager
 import com.rodolfo.itaxcix.data.remote.dto.UserDTO
 import com.rodolfo.itaxcix.data.remote.api.ApiService
 import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.DriverAvailabilityRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.DriverAvailabilityResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.DriverRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.DriverStatusResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.LoginResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.RecoveryRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.RecoveryResponseDTO
@@ -16,10 +20,13 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
+import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.utils.EmptyContent.headers
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.coroutines.TimeoutCancellationException
@@ -27,7 +34,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import okio.IOException
 
-class ApiServiceImpl(private val client: HttpClient) : ApiService {
+class ApiServiceImpl(
+    private val client: HttpClient,
+    private val preferencesManager: PreferencesManager
+) : ApiService {
 
     private val baseUrl = "https://149.130.161.148/api/v1"
 
@@ -135,6 +145,57 @@ class ApiServiceImpl(private val client: HttpClient) : ApiService {
         }
     }
 
+    override suspend fun getDriverStatus(driverId: Int): DriverStatusResponseDTO {
+        return safeApiCall {
+            val response = client.get("$baseUrl/driver/status/$driverId") {
+                addAuthToken()
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun driverActivateAvailability(driverId: Int): DriverAvailabilityResponseDTO {
+        return safeApiCall {
+            val driverAvailabilityRequestDTO = DriverAvailabilityRequestDTO(driverId)
+            val response = client.post("$baseUrl/driver/activate-availability") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(driverAvailabilityRequestDTO)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun driverDeactivateAvailability(driverId: Int): DriverAvailabilityResponseDTO {
+        return safeApiCall {
+            val driverAvailabilityRequestDTO = DriverAvailabilityRequestDTO(driverId)
+            val response = client.post("$baseUrl/driver/deactivate-availability") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(driverAvailabilityRequestDTO)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
     private fun parseErrorMessage(json: String): String {
         return try {
             val jsonObject = Json.parseToJsonElement(json).jsonObject
@@ -142,6 +203,18 @@ class ApiServiceImpl(private val client: HttpClient) : ApiService {
                 ?: "Error desconocido"
         } catch (e: Exception) {
             "Error inesperado del servidor"
+        }
+    }
+
+    // Método de extensión para añadir headers de autenticación
+    private fun HttpRequestBuilder.addAuthToken() {
+        val token = preferencesManager.userData.value?.authToken
+        if (token != null) {
+            headers {
+                append("Authorization", "Bearer $token")
+            }
+        } else {
+            throw Exception("Token no proporcionado. Por favor inicie sesión nuevamente.")
         }
     }
 

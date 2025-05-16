@@ -25,7 +25,6 @@ data class DrawerItem(
 val driverDrawerItems = listOf(
     DrawerItem("Inicio", Icons.Default.Home, "driverHome"),
     DrawerItem("Perfil", Icons.Default.Person, "driverProfile"),
-    DrawerItem("Disponibilidad", Icons.Default.AccessTime, "driverAvailability"),
     DrawerItem("Historial", Icons.Default.History, "driverHistory"),
     DrawerItem("Cerrar sesión", Icons.Default.ExitToApp, "logout")
 )
