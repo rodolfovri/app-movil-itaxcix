@@ -1,5 +1,9 @@
 package com.rodolfo.itaxcix.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -54,7 +58,9 @@ fun AppNavigation() {
         startDestination = Routes.WELCOME
     ) {
 
-        composable(Routes.WELCOME) {
+        composable(
+            Routes.WELCOME
+        ) {
             WelcomeHomeScreen(
                 onLoginClick = { navController.navigate(Routes.LOGIN) },
                 onRegisterClick = { navController.navigate(Routes.REGISTER_OPTIONS) }

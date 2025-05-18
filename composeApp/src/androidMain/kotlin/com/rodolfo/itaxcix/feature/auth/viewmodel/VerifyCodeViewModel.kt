@@ -94,6 +94,10 @@ class VerifyCodeViewModel @Inject constructor(
             _codeError.value = "El código es requerido"
             errorMessages.add("• El código es requerido")
             isValid = false
+        } else if (_code.value.contains(" ")) {
+            _codeError.value = "El código no puede contener espacios"
+            errorMessages.add("• El código no puede contener espacios")
+            isValid = false
         } else {
             _codeError.value = null
         }

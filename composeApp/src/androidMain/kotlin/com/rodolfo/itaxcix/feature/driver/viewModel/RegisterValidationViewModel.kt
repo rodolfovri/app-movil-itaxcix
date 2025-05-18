@@ -57,6 +57,10 @@ class RegisterValidationViewModel @Inject constructor() : ViewModel() {
             _documentError.value = "El documento no puede estar vacío"
             errorMessages.add("• El documento no puede estar vacío")
             isValid = false
+        } else if (_document.value.contains(" ")) {
+            _documentError.value = "El documento no puede contener espacios"
+            errorMessages.add("• El documento no puede contener espacios")
+            isValid = false
         } else {
             when (_documentTypeId.value) {
                 1 -> { // DNI

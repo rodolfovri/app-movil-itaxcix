@@ -102,6 +102,10 @@ class RegisterDriverViewModel @Inject constructor(
             _aliasError.value = "Alias no puede estar vacío"
             errorMessages.add("• Alias no puede estar vacío")
             isValid = false
+        } else if (_alias.value.contains(" ")) {
+            _aliasError.value = "El alias no puede contener espacios"
+            errorMessages.add("• El alias no puede contener espacios")
+            isValid = false
         } else if (_alias.value.length < 3) {
             _aliasError.value = "El alias debe tener al menos 3 caracteres"
             errorMessages.add("• El alias debe tener al menos 3 caracteres")
@@ -117,6 +121,10 @@ class RegisterDriverViewModel @Inject constructor(
         if (_password.value.isBlank()) {
             _passwordError.value = "La contraseña no puede estar vacía"
             errorMessages.add("• La contraseña no puede estar vacía")
+            isValid = false
+        } else if (_password.value.contains(" ")) {
+            _passwordError.value = "La contraseña no puede contener espacios"
+            errorMessages.add("• La contraseña no puede contener espacios")
             isValid = false
         } else if (_password.value.length < 8) {
             _passwordError.value = "La contraseña debe tener al menos 8 caracteres"
@@ -146,7 +154,12 @@ class RegisterDriverViewModel @Inject constructor(
             _contactError.value = "El contacto no puede estar vacío"
             errorMessages.add("• El contacto no puede estar vacío")
             isValid = false
-        } else if (_contactTypeId.value == 1 && !_contact.value.contains("@")) {
+        } else if (_contact.value.contains(" ")) {
+            _contactError.value = "El contacto no puede contener espacios"
+            errorMessages.add("• El contacto no puede contener espacios")
+            isValid = false
+        } else if (_contactTypeId.value == 1 &&
+            !_contact.value.matches(Regex("^[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$"))) {
             _contactError.value = "El contacto debe ser un correo electrónico válido"
             errorMessages.add("• El contacto debe ser un correo electrónico válido")
             isValid = false
@@ -161,6 +174,10 @@ class RegisterDriverViewModel @Inject constructor(
         if (_licensePlate.value.isBlank()) {
             _licensePlateError.value = "La placa no puede estar vacía"
             errorMessages.add("• La placa no puede estar vacía")
+            isValid = false
+        } else if (_licensePlate.value.contains(" ")) {
+            _licensePlateError.value = "La placa no puede contener espacios"
+            errorMessages.add("• La placa no puede contener espacio")
             isValid = false
         } else if (!_licensePlate.value.matches(Regex("^[A-Z0-9]{6,7}$"))) {
             _licensePlateError.value = "Formato de placa inválido"

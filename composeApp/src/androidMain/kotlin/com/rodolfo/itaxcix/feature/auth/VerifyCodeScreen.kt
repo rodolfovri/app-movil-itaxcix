@@ -151,7 +151,6 @@ fun VerifyCodeScreen(
                         .fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Contenedor principal del formulario
                     Column(
                         modifier = Modifier.fillMaxWidth()
                     ) {

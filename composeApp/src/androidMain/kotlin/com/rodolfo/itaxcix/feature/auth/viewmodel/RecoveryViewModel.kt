@@ -84,6 +84,10 @@ class RecoveryViewModel @Inject constructor(
             _contactError.value = "El campo de contacto no puede estar vacío"
             errorMessages.add("• El campo de contacto no puede estar vacío")
             isValid = false
+        } else if (_contact.value.contains(" ")) {
+            _contactError.value = "El campo de contacto no puede contener espacios"
+            errorMessages.add("• El campo de contacto no puede contener espacios")
+            isValid = false
         } else {
             _contactError.value = null
         }

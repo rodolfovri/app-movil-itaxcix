@@ -87,6 +87,10 @@ class ResetPasswordViewModel @Inject constructor(
             _newPasswordError.value = "La nueva contraseña no puede estar vacía"
             errorMessages.add("• La nueva contraseña no puede estar vacía")
             isValid = false
+        } else if (_newPassword.value.contains(" ")) {
+            _newPasswordError.value = "La nueva contraseña no puede contener espacios"
+            errorMessages.add("• La nueva contraseña no puede contener espacios ")
+            isValid = false
         } else if (_newPassword.value.length < 8) {
             _newPasswordError.value = "La contraseña debe tener al menos 8 caracteres"
             errorMessages.add("• La contraseña debe tener al menos 8 caracteres")

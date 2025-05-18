@@ -55,7 +55,6 @@ class LoginViewModel @Inject constructor(
     }
 
     // Método para validar los campos
-    // En LoginViewModel
     private fun validateFields(): Pair<Boolean, String?> {
         val errorMessages = mutableListOf<String>()
         var isValid = true
@@ -63,6 +62,10 @@ class LoginViewModel @Inject constructor(
         if (_username.value.isBlank()) {
             _usernameError.value = "El nombre de usuario no puede estar vacío"
             errorMessages.add("• El nombre de usuario no puede estar vacío")
+            isValid = false
+        } else if (_username.value.contains(" ")) {
+            _usernameError.value = "El nombre de usuario no puede contener espacios"
+            errorMessages.add("• El nombre de usuario no puede contener espacios")
             isValid = false
         } else {
             _usernameError.value = null
