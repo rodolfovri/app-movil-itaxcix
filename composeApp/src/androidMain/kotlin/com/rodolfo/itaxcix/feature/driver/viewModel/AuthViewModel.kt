@@ -31,6 +31,10 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun onSuccessShown() {
+        _logoutState.value = LogoutState.Initial
+    }
+
     sealed class LogoutState {
         object Initial : LogoutState()
         object Loading : LogoutState()

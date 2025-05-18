@@ -28,6 +28,7 @@ import com.rodolfo.itaxcix.feature.citizen.RegisterValidationCitizenScreen
 import com.rodolfo.itaxcix.feature.driver.dashboard.DashboardDriverScreen
 import com.rodolfo.itaxcix.feature.driver.RegisterDriverScreen
 import com.rodolfo.itaxcix.feature.driver.RegisterValidationDriverScreen
+import com.rodolfo.itaxcix.feature.driver.viewModel.AuthViewModel
 import com.rodolfo.itaxcix.feature.driver.viewModel.RegisterDriverViewModel
 
 object Routes {
@@ -178,11 +179,31 @@ fun AppNavigation() {
         }
 
         composable(Routes.DASHBOARD_CITIZEN) {
-            DashboardCitizenScreen()
+
+            val viewModel = hiltViewModel<AuthViewModel>()
+
+            DashboardCitizenScreen(
+                viewModel = viewModel,
+                onLogout = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.WELCOME) { inclusive = false }
+                    }
+                }
+            )
         }
 
         composable(Routes.DASHBOARD_DRIVER) {
-            DashboardDriverScreen()
+
+            val viewModel = hiltViewModel<AuthViewModel>()
+
+            DashboardDriverScreen(
+                viewModel = viewModel,
+                onLogout = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.WELCOME) { inclusive = false }
+                    }
+                }
+            )
         }
 
         composable(

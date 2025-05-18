@@ -1,6 +1,7 @@
 package com.rodolfo.itaxcix.feature.auth
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -10,8 +11,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
@@ -23,10 +26,13 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -51,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -74,6 +81,7 @@ import com.rodolfo.itaxcix.domain.model.User
 import com.rodolfo.itaxcix.feature.auth.viewmodel.LoginViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.RegisterViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
+import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
 import kotlinx.coroutines.delay
 
 @Preview
@@ -122,7 +130,7 @@ fun LoginScreen(
             }
             is LoginViewModel.LoginState.Success -> {
                 isSuccessSnackbar = true
-                delay(1000)
+                delay(1500)
                 val loginResult = state.user as LoginResult
                 val user = loginResult.user
 
@@ -343,38 +351,14 @@ fun LoginScreen(
             }
         }
 
-        // Overlay bloqueador de interacciones (transparente) cuando está cargando
-        if (isLoading || isRedirecting) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.7f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        enabled = true,
-                        onClick = { /* Captura todos los clics pero no hace nada */ }
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(60.dp),
-                        color = ITaxCixPaletaColors.Blue1,
-                        strokeWidth = 5.dp
-                    )
-                    Text(
-                        text = if (isRedirecting) "Credenciales correctas, redirigiendo..." else "Procesando solicitud...",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                }
-            }
-        }
+        // Overlay bloqueador de interacciones cuando está cargando o redirigiendo
+        ITaxCixProgressRequest(
+            isVisible = isLoading || isRedirecting,
+            isSuccess = isRedirecting,
+            loadingTitle = "Procesando",
+            successTitle = "Inicio de sesión exitoso",
+            loadingMessage = "Por favor espera un momento...",
+            successMessage = "Redirigiendo..."
+        )
     }
 }

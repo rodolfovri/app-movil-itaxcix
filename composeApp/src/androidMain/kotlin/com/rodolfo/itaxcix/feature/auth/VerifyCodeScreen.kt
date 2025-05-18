@@ -1,5 +1,8 @@
 package com.rodolfo.itaxcix.feature.auth
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -14,6 +18,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +54,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rodolfo.itaxcix.data.remote.api.AppModule
 import com.rodolfo.itaxcix.feature.auth.viewmodel.VerifyCodeViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
+import kotlinx.coroutines.delay
 
 @Preview
 @Composable
@@ -73,23 +79,17 @@ fun VerifyCodeScreen(
     val coroutineScope = rememberCoroutineScope()
     var isSuccessSnackbar by remember { mutableStateOf(false) }
 
+    // Estados para controlar la interfaz de carga y redirección
+    val isLoading = verifyCodeState is VerifyCodeViewModel.VerifyCodeState.Loading
+    val isRedirecting = verifyCodeState is VerifyCodeViewModel.VerifyCodeState.Success
+
 
     LaunchedEffect(key1 = verifyCodeState) {
         when (val state = verifyCodeState) {
-            is VerifyCodeViewModel.VerifyCodeState.Loading -> {
-                // Mostrar un Snackbar de carga
-                snackbarHostState.showSnackbar(
-                    message = "Cargando...",
-                    duration = SnackbarDuration.Indefinite
-                )
-            }
             is VerifyCodeViewModel.VerifyCodeState.Success -> {
                 // Mostrar un Snackbar de éxito
                 isSuccessSnackbar = true
-                snackbarHostState.showSnackbar(
-                    message = state.message,
-                    duration = SnackbarDuration.Short
-                )
+                delay(1000)
                 onVerifyCodeSuccess(state.userId)
                 viewModel.onSuccessShown()
             }
@@ -107,137 +107,168 @@ fun VerifyCodeScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                // Personalizar el Snackbar según el estado
-                Snackbar(
-                    modifier = Modifier.padding(16.dp),
-                    containerColor = if (isSuccessSnackbar) Color(0xFF4CAF50) else Color(0xFFD32F2F),
-                    contentColor = Color.White,
-                    dismissAction = {
-                        IconButton(onClick = { data.dismiss() }) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState) { data ->
+                    Snackbar(
+                        modifier = Modifier.padding(16.dp),
+                        containerColor = if (isSuccessSnackbar) Color(0xFF4CAF50) else Color(0xFFD32F2F),
+                        contentColor = Color.White,
+                        dismissAction = {
+                            IconButton(onClick = { data.dismiss() }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cerrar",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Cerrar",
-                                tint = Color.White
+                                imageVector = if (isSuccessSnackbar) Icons.Default.Check else Icons.Default.Error,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.padding(end = 8.dp)
                             )
+                            Text(text = data.visuals.message)
                         }
                     }
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if (isSuccessSnackbar) Icons.Default.Check else Icons.Default.Error,
-                            contentDescription = if (isSuccessSnackbar) "Éxito" else "Error",
-                            tint = Color.White,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text(text = data.visuals.message)
-                    }
                 }
-            }
-        },
-        containerColor = Color.White
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(30.dp)
-        ) {
-            Column(
+            },
+            containerColor = Color.White
+        ) { padding ->
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxSize(), // Para que ocupe toda la altura disponible
-                verticalArrangement = Arrangement.SpaceBetween // Para distribuir los elementos verticalmente
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(30.dp)
             ) {
-                // Contenedor principal del formulario
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "¡Casi listo para volver!",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    // Mensaje personalizado según el tipo de contacto
-                    val mensaje = if (contactType == 1) {
-                        "Te hemos enviado un código de verificación a tu correo: $contact"
-                    } else {
-                        "Te hemos enviado un código de verificación a tu número: $contact"
-                    }
-
-                    Text(
-                        text = mensaje,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 30.dp),
-                    )
-
-                    OutlinedTextField(
-                        value = code,
-                        onValueChange = {
-                            if (it.length <= 6) {
-                            viewModel.updateCode(it)
-                            }
-                        },
-                        label = { Text(text = "Ingresa tu código") },
-                        isError = codeError != null,
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ITaxCixPaletaColors.Blue1,
-                            unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
-                            cursorColor = ITaxCixPaletaColors.Blue1,
-                            focusedLabelColor = ITaxCixPaletaColors.Blue1,
-                            selectionColors = TextSelectionColors(
-                                handleColor = ITaxCixPaletaColors.Blue1,
-                                backgroundColor = ITaxCixPaletaColors.Blue3
-                            )
-                        )
-                    )
-
-
-                    Button(
-                        onClick = { viewModel.verifyCode()  },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp),
-                        shape = RectangleShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ITaxCixPaletaColors.Blue1,
-                            contentColor = Color.White
-                        )
+                    // Contenedor principal del formulario
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "Enviar código de recuperación",
-                            style = MaterialTheme.typography.labelLarge,
-                            textAlign = TextAlign.Center,
+                            text = "¡Casi listo para volver!",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp)
+                                .padding(bottom = 8.dp),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
                         )
-                    }
 
+                        val mensaje = if (contactType == 1) {
+                            "Te hemos enviado un código de verificación a tu correo: $contact"
+                        } else {
+                            "Te hemos enviado un código de verificación a tu número: $contact"
+                        }
+
+                        Text(
+                            text = mensaje,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 30.dp),
+                        )
+
+                        OutlinedTextField(
+                            value = code,
+                            onValueChange = {
+                                if (it.length <= 6) {
+                                    viewModel.updateCode(it)
+                                }
+                            },
+                            label = { Text(text = "Ingresa tu código") },
+                            isError = codeError != null,
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ITaxCixPaletaColors.Blue1,
+                                unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
+                                cursorColor = ITaxCixPaletaColors.Blue1,
+                                focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                                selectionColors = TextSelectionColors(
+                                    handleColor = ITaxCixPaletaColors.Blue1,
+                                    backgroundColor = ITaxCixPaletaColors.Blue3
+                                )
+                            )
+                        )
+
+                        Button(
+                            onClick = { viewModel.verifyCode() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            shape = RectangleShape,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ITaxCixPaletaColors.Blue1,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                text = "Enviar código de recuperación",
+                                style = MaterialTheme.typography.labelLarge,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            )
+                        }
+                    }
+                }
+
+                Text(
+                    text = "Este código es parte del proceso de recuperación para cuentas registradas.",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp)
+                        .align(Alignment.BottomCenter),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        // Overlay bloqueador de interacciones cuando está cargando o redirigiendo
+        if (isLoading || isRedirecting) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.7f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = true,
+                        onClick = { /* Captura clics pero no hace nada */ }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(60.dp),
+                        color = ITaxCixPaletaColors.Blue1,
+                        strokeWidth = 5.dp
+                    )
+                    Text(
+                        text = if (isRedirecting) "Código verificado, redirigiendo..." else "Procesando solicitud...",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
                 }
             }
-
-            Text(
-                text = "Este código es parte del proceso de recuperación para cuentas registradas.",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 20.dp)
-                    .align(Alignment.BottomCenter),
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center
-            )
         }
     }
 }

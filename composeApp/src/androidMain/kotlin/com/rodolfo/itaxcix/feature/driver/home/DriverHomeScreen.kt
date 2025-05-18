@@ -20,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.rodolfo.itaxcix.feature.driver.viewModel.DriverHomeViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 import com.rodolfo.itaxcix.ui.MyColors
+import com.rodolfo.itaxcix.ui.design.ITaxCixConfirmDialog
 
 @Composable
 fun DriverHomeScreen(
@@ -99,7 +100,7 @@ fun DriverHomeScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "Bienvenido, ${userData?.name ?: "Conductor"}",
+                        text = "Bienvenido, ${userData?.nickname ?: "Conductor"}",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = ITaxCixPaletaColors.Blue1
@@ -158,56 +159,18 @@ fun DriverHomeScreen(
         }
     }
 
-    // Diálogo de confirmación
-    if (showConfirmDialog) {
-        AlertDialog(
-            onDismissRequest = { showConfirmDialog = false },
-            containerColor = ITaxCixPaletaColors.Background,
-            titleContentColor = ITaxCixPaletaColors.Blue1,
-            textContentColor = Color.DarkGray,
-            title = {
-                Text(
-                    text = if (userData?.isDriverAvailable == true)
-                        "¿Desactivar disponibilidad?" else "¿Activar disponibilidad?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-            },
-            text = {
-                Text(
-                    text = if (userData?.isDriverAvailable == true)
-                        "Ya no estarás disponible para recibir viajes."
-                    else
-                        "Estarás disponible para recibir solicitudes de viaje.",
-                    fontSize = 16.sp
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        pendingAction()
-                        showConfirmDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (userData?.isDriverAvailable == true)
-                            ITaxCixPaletaColors.Blue2 else ITaxCixPaletaColors.Blue2,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("Sí, confirmar")
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { showConfirmDialog = false },
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = ITaxCixPaletaColors.Blue1
-                    )
-                ) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    }
+    // Diálogo de confirmación reutilizable
+    ITaxCixConfirmDialog(
+        showDialog = showConfirmDialog,
+        onDismiss = { showConfirmDialog = false },
+        onConfirm = { pendingAction() },
+        title = if (userData?.isDriverAvailable == true)
+            "¿Desactivar disponibilidad?" else "¿Activar disponibilidad?",
+        message = if (userData?.isDriverAvailable == true)
+            "Ya no estarás disponible para recibir viajes."
+        else
+            "Estarás disponible para recibir solicitudes de viaje.",
+        confirmButtonColor = ITaxCixPaletaColors.Blue2
+    )
 
 }

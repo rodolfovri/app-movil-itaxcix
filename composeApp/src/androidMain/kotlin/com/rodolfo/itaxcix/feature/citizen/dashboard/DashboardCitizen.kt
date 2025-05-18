@@ -12,13 +12,20 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,6 +34,8 @@ import androidx.navigation.compose.rememberNavController
 import com.rodolfo.itaxcix.feature.citizen.history.CitizenHistoryScreen
 import com.rodolfo.itaxcix.feature.citizen.home.CitizenHomeScreen
 import com.rodolfo.itaxcix.feature.citizen.profile.CitizenProfileScreen
+import com.rodolfo.itaxcix.feature.driver.viewModel.AuthViewModel
+import com.rodolfo.itaxcix.ui.design.ITaxCixConfirmDialog
 import kotlinx.coroutines.launch
 
 @Preview
@@ -45,7 +54,10 @@ object CitizenRoutes {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardCitizenScreen(onLogout: () -> Unit = {}) {
+fun DashboardCitizenScreen(
+    viewModel: AuthViewModel = hiltViewModel(),
+    onLogout: () -> Unit = {}
+) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val navController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
@@ -53,11 +65,24 @@ fun DashboardCitizenScreen(onLogout: () -> Unit = {}) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: CitizenRoutes.HOME
 
+    val authState by viewModel.logoutState.collectAsState()
+    var showAuthDialog by remember { mutableStateOf(false) }
+
     val title = when (currentRoute) {
         CitizenRoutes.HOME -> "Inicio"
         CitizenRoutes.PROFILE -> "Perfil"
         CitizenRoutes.HISTORY -> "Historial"
         else -> "Panel del Ciudadano"
+    }
+
+    LaunchedEffect(key1 = authState) {
+        when(val state = authState) {
+            is AuthViewModel.LogoutState.Success -> {
+                onLogout()
+                viewModel.onSuccessShown()
+            }
+            else -> {}
+        }
     }
 
     ModalNavigationDrawer(
@@ -68,7 +93,7 @@ fun DashboardCitizenScreen(onLogout: () -> Unit = {}) {
                 onItemClick = { route ->
                     coroutineScope.launch { drawerState.close() }
                     if (route == "logout") {
-                        onLogout()
+                        showAuthDialog = true
                     } else {
                         navController.navigate(route) {
                             popUpTo(CitizenRoutes.HOME) { saveState = true }
@@ -91,7 +116,12 @@ fun DashboardCitizenScreen(onLogout: () -> Unit = {}) {
                         }) {
                             Icon(Icons.Default.Menu, contentDescription = "Menú")
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.White,
+                        titleContentColor = Color.Black,
+                        actionIconContentColor = Color.Black
+                    )
                 )
             },
             content = { padding ->
@@ -101,6 +131,17 @@ fun DashboardCitizenScreen(onLogout: () -> Unit = {}) {
             }
         )
     }
+
+    // Diálogo de confirmación para cerrar sesión
+    ITaxCixConfirmDialog(
+        showDialog = showAuthDialog,
+        onDismiss = { showAuthDialog = false },
+        onConfirm = { viewModel.logout() },
+        title = "Cerrar sesión",
+        message = "¿Estás seguro que deseas cerrar sesión en iTaxCix?",
+        confirmButtonText = "Sí, confirmar",
+        dismissButtonText = "Cancelar"
+    )
 }
 
 @Composable

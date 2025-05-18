@@ -13,6 +13,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * PreferencesManager es una clase que maneja el almacenamiento de preferencias de usuario utilizando
+ * DataStore. Permite guardar, cargar y limpiar datos de usuario.
+ *
+ * @param dataStore Instancia de DataStore<Preferences> para acceder a las preferencias.
+ */
+
 class PreferencesManager @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) {

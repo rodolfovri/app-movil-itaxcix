@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,15 +70,15 @@ import com.rodolfo.itaxcix.R
 import com.rodolfo.itaxcix.data.remote.api.AppModule
 import com.rodolfo.itaxcix.feature.auth.viewmodel.RecoveryViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
+import kotlinx.coroutines.delay
 
 @Preview
 @Composable
 fun RecoveryScreenPreview() {
     RecoveryScreen(
-        onBackClick = { /* Aquí puedes manejar el evento de clic en el botón "Atrás" */ },
+        onBackClick = {  },
         onVerifyClick = { contactTypeId, contact ->
-            // Aquí puedes manejar el evento de clic en el botón "Recuperar Contraseña"
-            // Por ejemplo, navegar a otra pantalla o mostrar un mensaje
+
         }
     )
 }
@@ -95,6 +96,8 @@ fun RecoveryScreen(
     val contactError by viewModel.contactError.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val isLoading = recoveryState is RecoveryViewModel.RecoveryState.Loading
+    val isRedirecting = recoveryState is RecoveryViewModel.RecoveryState.Success
     var isSuccessSnackbar by remember { mutableStateOf(false) }
 
     var selectedContactMethod by remember { mutableStateOf("Email") }
@@ -111,11 +114,8 @@ fun RecoveryScreen(
             }
             is RecoveryViewModel.RecoveryState.Success -> {
                 isSuccessSnackbar = true
+                delay(1000)
                 onVerifyClick(viewModel.contactTypeId.value, viewModel.contact.value)
-                snackbarHostState.showSnackbar(
-                    message = state.message,
-                    duration = SnackbarDuration.Short,
-                )
                 viewModel.onSuccessShown()
             }
             is RecoveryViewModel.RecoveryState.Error -> {
@@ -360,11 +360,17 @@ fun RecoveryScreen(
         }
 
         // Overlay de carga que cubre toda la pantalla cuando está en estado Loading
-        if (recoveryState is RecoveryViewModel.RecoveryState.Loading) {
+        if (isLoading || isRedirecting) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f)),
+                    .background(Color.Black.copy(alpha = 0.7f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = true,
+                        onClick = { /* Captura clics pero no hace nada */ }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -377,7 +383,7 @@ fun RecoveryScreen(
                         strokeWidth = 5.dp
                     )
                     Text(
-                        text = "Procesando solicitud...",
+                        text = if (isRedirecting) "Contacto verificado, redireccionando..." else "Procesando solicitud...",
                         color = Color.White,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
