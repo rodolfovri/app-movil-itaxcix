@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rodolfo.itaxcix.R
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
@@ -120,7 +121,8 @@ fun ITaxCixProgressRequest(
                         text = if (isSuccess) successMessage else loadingMessage,
                         color = Color.Gray,
                         style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 16.dp)
+                        modifier = Modifier.padding(top = 16.dp),
+                        textAlign = TextAlign.Center
                     )
                 }
             }

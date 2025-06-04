@@ -34,20 +34,22 @@ import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 data class CitizenDrawerItem(
     val label: String,
     val icon: ImageVector,
-    val route: String
+    val route: String,
+    val requiredPermission: String? = null
 )
 
 val citizenDrawerItems = listOf(
-    CitizenDrawerItem("Inicio", Icons.Default.Home, "citizenHome"),
-    CitizenDrawerItem("Perfil", Icons.Default.Person, "citizenProfile"),
-    CitizenDrawerItem("Historial", Icons.Default.History, "citizenHistory"),
-    CitizenDrawerItem("Cerrar sesión", Icons.Default.ExitToApp, "logout")
+    CitizenDrawerItem("Inicio", Icons.Default.Home, CitizenRoutes.HOME, "INICIO CIUDADANO"),
+    CitizenDrawerItem("Perfil", Icons.Default.Person, CitizenRoutes.PROFILE, "PERFIL CIUDADANO"),
+    CitizenDrawerItem("Historial", Icons.Default.History, CitizenRoutes.HISTORY, "HISTORIAL CIUDADANO"),
+    CitizenDrawerItem("Cerrar sesión", Icons.Default.ExitToApp, "logout") // Sin permiso requerido
 )
 
 @Composable
 fun CitizenDrawerContent(
     currentRoute: String,
-    onItemClick: (String) -> Unit
+    onItemClick: (String) -> Unit,
+    userPermissions: List<String> = emptyList()
 ) {
     Column(
         modifier = Modifier
@@ -76,14 +78,20 @@ fun CitizenDrawerContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+
+        // Filtrar y mostrar solo los elementos para los que el usuario tiene permiso
+        val visibleItems = citizenDrawerItems.filter { item ->
+            item.requiredPermission == null || userPermissions.contains(item.requiredPermission)
+        }
+
         // Elementos del drawer
-        for (item in citizenDrawerItems) {
+        for (item in visibleItems) {
             DrawerItemRow(
                 item = item,
                 isSelected = currentRoute == item.route,
                 onItemClick = onItemClick
             )
-            if (item != citizenDrawerItems.last()) {
+            if (item != visibleItems.last()) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }

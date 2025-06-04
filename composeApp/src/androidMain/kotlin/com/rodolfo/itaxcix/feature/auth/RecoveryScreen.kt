@@ -78,7 +78,8 @@ fun RecoveryScreenPreview() {
     RecoveryScreen(
         onBackClick = {  },
         onVerifyClick = { contactTypeId, contact ->
-
+            // Acción de verificación simulada
+            println("Verificando contacto: $contact con tipo $contactTypeId")
         }
     )
 }
@@ -348,7 +349,7 @@ fun RecoveryScreen(
                     )
                 ) {
                     Text(
-                        text = "Enviar código de verificación",
+                        text = "Enviar código de recuperación",
                         style = MaterialTheme.typography.labelLarge,
                         textAlign = TextAlign.Center,
                         modifier = Modifier

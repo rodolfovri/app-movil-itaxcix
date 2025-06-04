@@ -37,6 +37,8 @@ import com.rodolfo.itaxcix.feature.driver.home.DriverHomeScreen
 import com.rodolfo.itaxcix.feature.driver.profile.DriverProfileScreen
 import com.rodolfo.itaxcix.feature.driver.viewModel.AuthViewModel
 import com.rodolfo.itaxcix.ui.design.ITaxCixConfirmDialog
+import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Preview
@@ -68,6 +70,7 @@ fun DashboardDriverScreen(
 
     val authState by viewModel.logoutState.collectAsState()
     var showAuthDialog by remember { mutableStateOf(false) }
+    var isLoggingOut by remember { mutableStateOf(false) }
 
     val title = when (currentRoute) {
         DriverRoutes.HOME -> "Inicio"
@@ -78,9 +81,18 @@ fun DashboardDriverScreen(
 
     LaunchedEffect(key1 = authState) {
         when(val state = authState) {
+            is AuthViewModel.LogoutState.Loading -> {
+                isLoggingOut = true
+            }
             is AuthViewModel.LogoutState.Success -> {
+                // Mantenemos el indicador visible brevemente antes de redirigir
+                delay(2000)
                 onLogout()
                 viewModel.onSuccessShown()
+                isLoggingOut = false
+            }
+            is AuthViewModel.LogoutState.Error -> {
+                isLoggingOut = false
             }
             else -> {}
         }
@@ -141,6 +153,15 @@ fun DashboardDriverScreen(
         message = "¿Estás seguro que deseas cerrar sesión en iTaxCix?",
         confirmButtonText = "Sí, confirmar",
         dismissButtonText = "Cancelar"
+    )
+
+    ITaxCixProgressRequest(
+        isVisible = isLoggingOut,
+        isSuccess = authState is AuthViewModel.LogoutState.Success,
+        loadingTitle = "Cerrando sesión",
+        successTitle = "Sesión finalizada",
+        loadingMessage = "Por favor espera un momento...",
+        successMessage = "Redirigiendo al inicio de sesión..."
     )
 }
 

@@ -36,6 +36,8 @@ import com.rodolfo.itaxcix.feature.citizen.home.CitizenHomeScreen
 import com.rodolfo.itaxcix.feature.citizen.profile.CitizenProfileScreen
 import com.rodolfo.itaxcix.feature.driver.viewModel.AuthViewModel
 import com.rodolfo.itaxcix.ui.design.ITaxCixConfirmDialog
+import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Preview
@@ -67,6 +69,12 @@ fun DashboardCitizenScreen(
 
     val authState by viewModel.logoutState.collectAsState()
     var showAuthDialog by remember { mutableStateOf(false) }
+    var isLoggingOut by remember { mutableStateOf(false) }
+
+    // Obtener los permisos del usuario desde PreferencesManager
+    val preferencesManager = viewModel.preferencesManager
+    val userData by preferencesManager.userData.collectAsState()
+    val userPermissions = userData?.permissions ?: emptyList()
 
     val title = when (currentRoute) {
         CitizenRoutes.HOME -> "Inicio"
@@ -77,9 +85,18 @@ fun DashboardCitizenScreen(
 
     LaunchedEffect(key1 = authState) {
         when(val state = authState) {
+            is AuthViewModel.LogoutState.Loading -> {
+                isLoggingOut = true
+            }
             is AuthViewModel.LogoutState.Success -> {
+                // Mantenemos el indicador visible brevemente antes de redirigir
+                delay(2000)
                 onLogout()
                 viewModel.onSuccessShown()
+                isLoggingOut = false
+            }
+            is AuthViewModel.LogoutState.Error -> {
+                isLoggingOut = false
             }
             else -> {}
         }
@@ -101,7 +118,8 @@ fun DashboardCitizenScreen(
                             restoreState = true
                         }
                     }
-                }
+                },
+                userPermissions = userPermissions
             )
         },
         scrimColor = Color.Black.copy(alpha = 0.3f)
@@ -141,6 +159,16 @@ fun DashboardCitizenScreen(
         message = "¿Estás seguro que deseas cerrar sesión en iTaxCix?",
         confirmButtonText = "Sí, confirmar",
         dismissButtonText = "Cancelar"
+    )
+
+    // Indicador de progreso durante el cierre de sesión
+    ITaxCixProgressRequest(
+        isVisible = isLoggingOut,
+        isSuccess = authState is AuthViewModel.LogoutState.Success,
+        loadingTitle = "Cerrando sesión",
+        successTitle = "Sesión finalizada",
+        loadingMessage = "Por favor espera un momento...",
+        successMessage = "Redirigiendo al inicio de sesión..."
     )
 }
 

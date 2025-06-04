@@ -12,7 +12,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val preferencesManager: PreferencesManager
+    val preferencesManager: PreferencesManager
 ) : ViewModel(){
 
     private val _logoutState = MutableStateFlow<LogoutState>(LogoutState.Initial)

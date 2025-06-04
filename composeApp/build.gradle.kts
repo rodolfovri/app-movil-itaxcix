@@ -27,6 +27,12 @@ kotlin {
             implementation(libs.androidx.navigation.compose)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.androidx.datastore.preferences)
+            implementation(libs.androidx.camera.core)
+            implementation(libs.androidx.camera.camera2)
+            implementation(libs.androidx.camera.lifecycle)
+            implementation(libs.androidx.camera.view)
+            implementation(libs.androidx.camera.extensions)
+            implementation(libs.mlkit.face.detection)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -45,6 +51,7 @@ kotlin {
             implementation(libs.ktor.client.logging)
             implementation(libs.kotlin.coroutines.core)
             implementation(libs.hilt.android)
+            implementation(libs.kotlinx.datetime)
         }
     }
 

@@ -6,7 +6,10 @@ import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.observer.ResponseObserver
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -41,8 +44,31 @@ object ApiClient {
             }
 
             install(Logging) {
-                level = LogLevel.ALL
+                level = LogLevel.HEADERS
+                // Personalizar el logger para ocultar información sensible
+                logger = object : Logger {
+                    override fun log(message: String) {
+                        // Reemplazar URLs y datos sensibles en los logs
+                        val sanitizedMessage = message.replace(
+                            Regex("https?://[^\\s/]+"),
+                            "[URL_PROTEGIDA]"
+                        )
+                        println("KTOR_CLIENT: $sanitizedMessage")
+                    }
+                }
             }
+
+            // Observador para manejar respuestas inesperadas
+            install(ResponseObserver) {
+                onResponse { response ->
+                    if (response.status != HttpStatusCode.OK ||
+                        response.headers["Content-Type"]?.contains("text/html") == true) {
+                        println("KTOR_CLIENT: Tipo de respuesta inesperado - Estado: ${response.status}")
+                    }
+                }
+            }
+
+            expectSuccess = false // No lanzar excepciones por respuestas no 2xx
         }
     }
 }

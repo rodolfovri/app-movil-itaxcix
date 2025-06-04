@@ -14,6 +14,10 @@ import com.rodolfo.itaxcix.data.remote.dto.RecoveryResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.RegisterDriverResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.RegisterResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.ResetPasswordResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeResponseDTO
 import io.ktor.client.HttpClient
@@ -26,7 +30,6 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
-import io.ktor.client.utils.EmptyContent.headers
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.coroutines.TimeoutCancellationException
@@ -50,6 +53,36 @@ class ApiServiceImpl(
     override suspend fun getUserById(id: String): UserDTO {
         return safeApiCall {
             client.get("$baseUrl/users/$id").body()
+        }
+    }
+
+    override suspend fun validateDocument(document: ValidateDocumentRequestDTO): ValidateDocumentResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/auth/validation/document") {
+                contentType(ContentType.Application.Json)
+                setBody(document)
+            }
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun validateBiometric(biometric: ValidateBiometricRequestDTO): ValidateBiometricResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/auth/validation/biometric") {
+                contentType(ContentType.Application.Json)
+                setBody(biometric)
+            }
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
         }
     }
 
@@ -83,11 +116,11 @@ class ApiServiceImpl(
         }
     }
 
-    override suspend fun login(username: String, password: String): LoginResponseDTO {
+    override suspend fun login(documentValue: String, password: String): LoginResponseDTO {
         return safeApiCall {
             val response = client.post("$baseUrl/auth/login") {
                 contentType(ContentType.Application.Json)
-                setBody(mapOf("username" to username, "password" to password))
+                setBody(mapOf("documentValue" to documentValue, "password" to password))
             }
             if (response.status.value in 200..299) {
                 response.body()

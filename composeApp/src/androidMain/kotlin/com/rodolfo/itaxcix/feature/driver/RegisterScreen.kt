@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
@@ -22,7 +21,6 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,14 +43,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -64,14 +60,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rodolfo.itaxcix.R
-import com.rodolfo.itaxcix.data.remote.api.AppModule
 import com.rodolfo.itaxcix.feature.driver.viewModel.RegisterDriverViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
-import kotlinx.coroutines.delay
+import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
 
 @Preview
 @Composable
@@ -92,16 +84,11 @@ fun RegisterDriverScreen(
     val registerState by viewModel.registerState.collectAsState()
     val focusManager = LocalFocusManager.current
     val isLoading = registerState is RegisterDriverViewModel.RegisterState.Loading
-    val documentTypeId by viewModel.documentTypeId.collectAsState()
-    val document by viewModel.document.collectAsState()
+    val isSuccess = registerState is RegisterDriverViewModel.RegisterState.Success
     val alias by viewModel.alias.collectAsState()
     val password by viewModel.password.collectAsState()
-    val contactTypeId by viewModel.contactTypeId.collectAsState()
     val contact by viewModel.contact.collectAsState()
 
-    val options = stringArrayResource(id = R.array.contact_method)
-    var expanded by remember { mutableStateOf(false) }
-    var selectedOptionText by remember { mutableStateOf(options[0]) }
     var isPassVisible by remember { mutableStateOf(false) }
 
     var selectedContactMethod by remember { mutableStateOf("Email") }
@@ -117,7 +104,6 @@ fun RegisterDriverScreen(
     val contactError by viewModel.contactError.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
 
     // Estado para controlar el color del Snackbar
     var isSuccessSnackbar by remember { mutableStateOf(false) }
@@ -135,10 +121,6 @@ fun RegisterDriverScreen(
             }
             is RegisterDriverViewModel.RegisterState.Success -> {
                 isSuccessSnackbar = true
-                snackbarHostState.showSnackbar(
-                    message = "Registro exitoso",
-                    duration = SnackbarDuration.Short
-                )
                 onRegisterSuccess()
                 viewModel.onSuccessShown()
             }
@@ -426,37 +408,13 @@ fun RegisterDriverScreen(
         }
 
         // Overlay bloqueador de interacciones cuando está cargando
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        enabled = true,
-                        onClick = { /* Captura todos los clics pero no hace nada */ }
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(60.dp),
-                        color = ITaxCixPaletaColors.Blue1,
-                        strokeWidth = 5.dp
-                    )
-                    Text(
-                        text = "Procesando solicitud...",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                }
-            }
-        }
+        ITaxCixProgressRequest(
+            isVisible = isLoading || isSuccess,
+            isSuccess = isSuccess,
+            loadingTitle = "Registrando conductor",
+            successTitle = "Registro exitoso",
+            loadingMessage = "Por favor espera un momento...",
+            successMessage = "Preparando tu cuenta..."
+        )
     }
 }

@@ -5,18 +5,14 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class LoginResponseDTO(
     val message: String,
-    val user: LoginUserWrapperDTO
+    val data: LoginDataDTO
 ) {
     @Serializable
-    data class LoginUserWrapperDTO(
+    data class LoginDataDTO(
         val token: String,
-        val user: LoginUserDTO
-    )
-
-    @Serializable
-    data class LoginUserDTO(
-        val id: Int,
-        val alias: String,
-        val roles: List<String>
+        val userId: Int,
+        val documentValue: String,
+        val roles: List<String> = emptyList(),
+        val permissions: List<String> = emptyList()
     )
 }

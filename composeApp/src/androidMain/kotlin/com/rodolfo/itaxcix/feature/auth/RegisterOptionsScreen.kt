@@ -72,22 +72,21 @@ fun RegisterOptionsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Encabezado
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(vertical = 32.dp)
             ) {
                 Text(
-                    text = "¡Bienvenido!",
-                    style = MaterialTheme.typography.headlineMedium,
+                    text = "Elige tu rol",
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
                 Text(
-                    text = "¿Cómo deseas registrarte en la aplicación?",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = "Selecciona como quieres usar la aplicación",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
 
                 )
@@ -124,7 +123,7 @@ fun UserOptionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .wrapContentHeight() // ✅ se adapta al contenido
+            .wrapContentHeight() // Se adapta al contenido
             .clickable { onClick() }
             .shadow(elevation = 2.dp),
         shape = RectangleShape,

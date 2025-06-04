@@ -7,12 +7,16 @@ import com.rodolfo.itaxcix.data.remote.dto.UserDTO
 import com.rodolfo.itaxcix.data.remote.api.ApiService
 import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.DriverRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
 import com.rodolfo.itaxcix.domain.model.LoginResult
 import com.rodolfo.itaxcix.domain.model.RecoveryResult
 import com.rodolfo.itaxcix.domain.model.RegisterDriverResult
 import com.rodolfo.itaxcix.domain.model.RegisterResult
 import com.rodolfo.itaxcix.domain.model.ResetPasswordResult
 import com.rodolfo.itaxcix.domain.model.User
+import com.rodolfo.itaxcix.domain.model.ValidateBiometricResult
+import com.rodolfo.itaxcix.domain.model.ValidateDocumentResult
 import com.rodolfo.itaxcix.domain.model.VerifyCodeResult
 import com.rodolfo.itaxcix.domain.repository.DriverRepository
 import com.rodolfo.itaxcix.domain.repository.UserRepository
@@ -28,6 +32,22 @@ class UserRepositoryImpl(
 
     override suspend fun getUserById(id: String): User {
         return apiService.getUserById(id).toDomain()
+    }
+
+    override suspend fun validateDocument(document: ValidateDocumentRequestDTO): ValidateDocumentResult {
+        val response = apiService.validateDocument(document)
+        return ValidateDocumentResult(
+            message = response.message,
+            personId = response.data?.personId
+        )
+    }
+
+    override suspend fun validateBiometric(biometric: ValidateBiometricRequestDTO) : ValidateBiometricResult {
+        val response = apiService.validateBiometric(biometric)
+        return ValidateBiometricResult(
+            message = response.message,
+            personId = response.data?.personId
+        )
     }
 
     override suspend fun registerCitizen(user: CitizenRegisterRequestDTO): RegisterResult {
@@ -49,17 +69,19 @@ class UserRepositoryImpl(
         )
     }
 
-    override suspend fun login(username: String, password: String): LoginResult {
-        val response = apiService.login(username, password)
+    override suspend fun login(documentValue: String, password: String): LoginResult {
+        val response = apiService.login(documentValue, password)
 
-        val userId = response.user.user.id.toString()
-        val nickname = response.user.user.alias
-        val roles = response.user.user.roles.toString()
-        val token = response.user.token
+        val token = response.data.token
+        val userId = response.data.userId.toString()
+        val document = response.data.documentValue
+        val roles = response.data.roles
+        val permissions = response.data.permissions
 
         var user = User(
             id = userId,
-            nickname = nickname,
+            nickname = "",
+            document = document,
             name = "",
             email = "",
             phone = "",
@@ -74,13 +96,15 @@ class UserRepositoryImpl(
             UserData(
                 id = userId.toInt(),
                 name = "",
-                nickname = nickname,
+                nickname = "",
+                document = document,
                 email = "",
                 phone = "",
                 address = "",
                 city = "",
                 country = "",
-                role = roles,
+                roles = roles,
+                permissions = permissions,
                 status = "UNAVAILABLE",
                 isDriverAvailable = false,
                 lastDriverStatusUpdate = null,
@@ -89,7 +113,7 @@ class UserRepositoryImpl(
         )
 
         // Obtener el estado del conductor si el usuario tiene el rol de conductor
-        if (roles.contains("Conductor", ignoreCase = true)) {
+        if (roles.contains("Conductor")) {
             try {
                 val driverStatus = driverRepository.getDriverStatus(userId.toInt())
 
@@ -109,9 +133,6 @@ class UserRepositoryImpl(
                         )
                     )
                 }
-
-                Log.d("UserRepositoryImpl", "Driver Status: ${driverStatus.isDriverAvailable}")
-                Log.d("UserRepositoryImpl", "Last Driver Status Update: ${driverStatus.lastDriverStatusUpdate}")
             } catch (e: Exception) {
                 // Manejar el error pero continuar con el inicio de sesión
                 Log.e("UserRepositoryImpl", "Error al obtener estado del conductor: ${e.message}")
@@ -149,6 +170,7 @@ class UserRepositoryImpl(
         return User(
             id = id ?: "",
             nickname = nickname ?: "",
+            document = document ?: "",
             name = name ?: "",
             email = email ?: "",
             phone = phone ?: "",
@@ -162,6 +184,7 @@ class UserRepositoryImpl(
         return UserDTO(
             id = id,
             nickname = nickname,
+            document = document,
             name = name,
             email = email,
             phone = phone,

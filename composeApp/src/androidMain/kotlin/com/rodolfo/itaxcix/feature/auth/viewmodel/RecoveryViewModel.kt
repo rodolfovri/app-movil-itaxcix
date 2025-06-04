@@ -92,14 +92,6 @@ class RecoveryViewModel @Inject constructor(
             _contactError.value = null
         }
 
-        if (_contactTypeId.value == 0) {
-            _contactTypeError.value = "Seleccione un tipo de contacto"
-            errorMessages.add("• Seleccione un tipo de contacto")
-            isValid = false
-        } else {
-            _contactTypeError.value = null
-        }
-
         return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
     }
 

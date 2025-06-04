@@ -1,36 +1,32 @@
 package com.rodolfo.itaxcix.feature.citizen.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
+import com.rodolfo.itaxcix.domain.model.ValidateDocumentResult
+import com.rodolfo.itaxcix.domain.repository.UserRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-class RegisterValidationViewModel @Inject constructor() : ViewModel() {
+@HiltViewModel
+class RegisterValidationViewModel @Inject constructor(
+    private val userRepository: UserRepository,
+) : ViewModel() {
 
     // Estados para el formulario
-    private val _documentTypeId = MutableStateFlow(1) // DNI por defecto
     private val _document = MutableStateFlow("")
     private val _documentError = MutableStateFlow<String?>(null)
     private val _validationState = MutableStateFlow<ValidationState>(ValidationState.Initial)
 
     // Exponer estados
-    val documentTypeId: StateFlow<Int> = _documentTypeId
-    val document: StateFlow<String> = _document
-    val documentError: StateFlow<String?> = _documentError
-    val validationState: StateFlow<ValidationState> = _validationState
-
-    // Actualizar tipo de documento según selección
-    fun updateDocumentType(selectedOption: String) {
-        _documentTypeId.value = when(selectedOption) {
-            "DNI" -> 1
-            "Pasaporte" -> 2
-            "Carnet de Extranjería" -> 3
-            "RUC" -> 4
-            else -> 1 // DNI por defecto
-        }
-        validateDocument() // Revalidar al cambiar el tipo
-    }
+    val document: StateFlow<String> = _document.asStateFlow()
+    val documentError: StateFlow<String?> = _documentError.asStateFlow()
+    val validationState: StateFlow<ValidationState> = _validationState.asStateFlow()
 
     fun updateDocument(value: String) {
         _document.value = value
@@ -43,48 +39,19 @@ class RegisterValidationViewModel @Inject constructor() : ViewModel() {
         var isValid = true
 
         if (_document.value.isBlank()) {
-            _documentError.value = "El documento no puede estar vacío"
-            errorMessages.add("• El documento no puede estar vacío")
+            _documentError.value = "El número de documento es obligatorio"
+            errorMessages.add("• El número de documento es obligatorio")
             isValid = false
         } else if (_document.value.contains(" ")) {
             _documentError.value = "El documento no puede contener espacios"
             errorMessages.add("• El documento no puede contener espacios")
             isValid = false
+        } else if (!_document.value.matches(Regex("^[0-9]{8}$"))) {
+            _documentError.value = "El DNI debe tener 8 dígitos numéricos"
+            errorMessages.add("• El DNI debe tener 8 dígitos numéricos")
+            isValid = false
         } else {
-            when (_documentTypeId.value) {
-                1 -> { // DNI
-                    if (!_document.value.matches(Regex("^[0-9]{8}$"))) {
-                        _documentError.value = "El DNI debe tener 8 dígitos numéricos"
-                        errorMessages.add("• El DNI debe tener 8 dígitos numéricos")
-                        isValid = false
-                    }
-                }
-                2 -> { // Pasaporte
-                    if (!_document.value.matches(Regex("^[A-Z0-9]{6,12}$"))) {
-                        _documentError.value = "El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos"
-                        errorMessages.add("• El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos")
-                        isValid = false
-                    }
-                }
-                3 -> { // Carnet de Extranjería
-                    if (!_document.value.matches(Regex("^[0-9]{9}$"))) {
-                        _documentError.value = "El carnet de extranjería debe tener 9 dígitos"
-                        errorMessages.add("• El carnet de extranjería debe tener 9 dígitos")
-                        isValid = false
-                    }
-                }
-                4 -> { // RUC
-                    if (!_document.value.matches(Regex("^[0-9]{11}$"))) {
-                        _documentError.value = "El RUC debe tener 11 dígitos numéricos"
-                        errorMessages.add("• El RUC debe tener 11 dígitos numéricos")
-                        isValid = false
-                    }
-                }
-            }
-
-            if (isValid) {
-                _documentError.value = null
-            }
+            _documentError.value = null
         }
 
         return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
@@ -92,27 +59,51 @@ class RegisterValidationViewModel @Inject constructor() : ViewModel() {
 
     // Validar y continuar usando el nuevo enfoque con mensajes agrupados
     fun validate() {
+        _validationState.value = ValidationState.Initial
+
         val (isValid, errorMessage) = validateDocument()
-        if (isValid) {
-            _validationState.value = ValidationState.Success(_documentTypeId.value, _document.value)
-        } else {
+        if (!isValid) {
             _validationState.value = ValidationState.Error(errorMessage ?: "Documento inválido")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _validationState.value = ValidationState.Loading
+
+                val documentTypeId = 1 // Asignar un ID de tipo de documento fijo
+                val request = ValidateDocumentRequestDTO(
+                    documentTypeId = documentTypeId,
+                    documentValue = _document.value
+                )
+
+                val response = userRepository.validateDocument(request)
+                _validationState.value = ValidationState.Success(response)
+            } catch (e: Exception) {
+                _validationState.value =
+                    ValidationState.Error(e.message ?: "Error desconocido")
+            }
         }
     }
 
     // Navegación exitosa
     fun onSuccessNavigated() {
-        _validationState.value = ValidationState.Initial
+        if (_validationState.value is ValidationState.Success) {
+            _validationState.value = ValidationState.Initial
+        }
     }
 
     fun onErrorShown() {
-        _validationState.value = ValidationState.Initial
+        if (_validationState.value is ValidationState.Error) {
+            _validationState.value = ValidationState.Initial
+        }
     }
 
     // Estados para la pantalla
     sealed class ValidationState {
         object Initial : ValidationState()
-        data class Success(val documentTypeId: Int, val document: String) : ValidationState()
+        object Loading : ValidationState()
+        data class Success(val document: ValidateDocumentResult) : ValidationState()
         data class Error(val message: String) : ValidationState()
     }
 }

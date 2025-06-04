@@ -1,20 +1,13 @@
 package com.rodolfo.itaxcix.feature.auth
 
-import android.util.Log
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
@@ -26,13 +19,9 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -57,7 +46,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -69,17 +57,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.rodolfo.itaxcix.R
-import com.rodolfo.itaxcix.data.remote.api.AppModule
 import com.rodolfo.itaxcix.domain.model.LoginResult
-import com.rodolfo.itaxcix.domain.model.User
 import com.rodolfo.itaxcix.feature.auth.viewmodel.LoginViewModel
-import com.rodolfo.itaxcix.feature.auth.viewmodel.RegisterViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
 import kotlinx.coroutines.delay
@@ -130,13 +110,13 @@ fun LoginScreen(
             }
             is LoginViewModel.LoginState.Success -> {
                 isSuccessSnackbar = true
-                delay(1500)
+                delay(2000)
                 val loginResult = state.user as LoginResult
                 val user = loginResult.user
 
-                if (user.rol.contains("Conductor")) {
+                if (user.rol.contains("CONDUCTOR")) {
                     onDriverLoginSuccess()
-                } else if (user.rol.contains("Ciudadano")) {
+                } else if (user.rol.contains("CIUDADANO")) {
                     onCitizenLoginSuccess()
                 }
                 viewModel.onSuccessShown()
@@ -226,7 +206,7 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = username,
                         onValueChange = { viewModel.updateUsername(it) },
-                        label = { Text(text = "Ingresa tu usuario") },
+                        label = { Text(text = "Ingresa tu número de documento") },
                         isError = usernameError != null,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -275,7 +255,6 @@ fun LoginScreen(
                             unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
                             cursorColor = ITaxCixPaletaColors.Blue1,
                             focusedLabelColor = ITaxCixPaletaColors.Blue1,
-                            // Añadimos colores para el estado deshabilitado iguales a los normales
                             disabledBorderColor = ITaxCixPaletaColors.Blue3,
                             disabledLabelColor = ITaxCixPaletaColors.Blue3,
                             disabledTextColor = MaterialTheme.colorScheme.onSurface,
