@@ -1,13 +1,21 @@
 package com.rodolfo.itaxcix.feature.driver.viewModel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleRequestDTO
+import com.rodolfo.itaxcix.domain.model.ValidateVehicleResult
+import com.rodolfo.itaxcix.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class RegisterValidationViewModel @Inject constructor() : ViewModel() {
+class RegisterValidationViewModel @Inject constructor(
+    private val userRepository: UserRepository,
+) : ViewModel() {
 
     // Estados para el formulario
     private val _documentTypeId = MutableStateFlow(1) // DNI por defecto
@@ -18,24 +26,11 @@ class RegisterValidationViewModel @Inject constructor() : ViewModel() {
     private val _validationState = MutableStateFlow<ValidationState>(ValidationState.Initial)
 
     // Exponer estados
-    val documentTypeId: StateFlow<Int> = _documentTypeId
     val document: StateFlow<String> = _document
     val plate: StateFlow<String> = _plate
     val plateError: StateFlow<String?> = _plateError
     val documentError: StateFlow<String?> = _documentError
     val validationState: StateFlow<ValidationState> = _validationState
-
-    // Actualizar tipo de documento según selección
-    fun updateDocumentType(selectedOption: String) {
-        _documentTypeId.value = when(selectedOption) {
-            "DNI" -> 1
-            "Pasaporte" -> 2
-            "Carnet de Extranjería" -> 3
-            "RUC" -> 4
-            else -> 1 // DNI por defecto
-        }
-        validateFields() // Revalidar al cambiar el tipo
-    }
 
     fun updateDocument(value: String) {
         _document.value = value
@@ -61,45 +56,12 @@ class RegisterValidationViewModel @Inject constructor() : ViewModel() {
             _documentError.value = "El documento no puede contener espacios"
             errorMessages.add("• El documento no puede contener espacios")
             isValid = false
+        } else if (!_document.value.matches(Regex("^[0-9]{8}$"))) {
+            _documentError.value = "Formato inválido. El DNI debe tener exactamente 8 dígitos"
+            errorMessages.add("• Formato inválido. El DNI debe tener exactamente 8 dígitos")
+            isValid = false
         } else {
-            when (_documentTypeId.value) {
-                1 -> { // DNI
-                    if (!_document.value.matches(Regex("^[0-9]{8}$"))) {
-                        _documentError.value = "El DNI debe tener 8 dígitos numéricos"
-                        errorMessages.add("• El DNI debe tener 8 dígitos numéricos")
-                        isValid = false
-                    } else {
-                        _documentError.value = null
-                    }
-                }
-                2 -> { // Pasaporte
-                    if (!_document.value.matches(Regex("^[A-Z0-9]{6,12}$"))) {
-                        _documentError.value = "El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos"
-                        errorMessages.add("• El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos")
-                        isValid = false
-                    } else {
-                        _documentError.value = null
-                    }
-                }
-                3 -> { // Carnet de Extranjería
-                    if (!_document.value.matches(Regex("^[0-9]{9}$"))) {
-                        _documentError.value = "El carnet de extranjería debe tener 9 dígitos"
-                        errorMessages.add("• El carnet de extranjería debe tener 9 dígitos")
-                        isValid = false
-                    } else {
-                        _documentError.value = null
-                    }
-                }
-                4 -> { // RUC
-                    if (!_document.value.matches(Regex("^[0-9]{11}$"))) {
-                        _documentError.value = "El RUC debe tener 11 dígitos numéricos"
-                        errorMessages.add("• El RUC debe tener 11 dígitos numéricos")
-                        isValid = false
-                    } else {
-                        _documentError.value = null
-                    }
-                }
-            }
+            _documentError.value = null
         }
 
         // Validación de la placa
@@ -107,9 +69,9 @@ class RegisterValidationViewModel @Inject constructor() : ViewModel() {
             _plateError.value = "La placa no puede estar vacía"
             errorMessages.add("• La placa no puede estar vacía")
             isValid = false
-        } else if (!_plate.value.matches(Regex("^[A-Z0-9]{6,7}$"))) {
-            _plateError.value = "Formato de placa inválido"
-            errorMessages.add("• Formato de placa inválido")
+        } else if (!_plate.value.matches(Regex("^[A-Z0-9]{6}$"))) {
+            _plateError.value = "Formato de placa inválido. Debe tener exactamente 6 caracteres alfanuméricos, ejemplo: ABC123"
+            errorMessages.add("• Formato de placa inválido. Debe tener exactamente 6 caracteres alfanuméricos, ejemplo: ABC123")
             isValid = false
         } else {
             _plateError.value = null
@@ -120,31 +82,52 @@ class RegisterValidationViewModel @Inject constructor() : ViewModel() {
 
     // Validar usando el nuevo enfoque con mensajes agrupados
     fun validate() {
+        _validationState.value = ValidationState.Initial
+
         val (isValid, errorMessage) = validateFields()
-        if (isValid) {
-            _validationState.value = ValidationState.Success(
-                _documentTypeId.value,
-                _document.value,
-                _plate.value
-            )
-        } else {
-            _validationState.value = ValidationState.Error(errorMessage ?: "Datos inválidos")
+        if (!isValid) {
+            _validationState.value = ValidationState.Error(errorMessage ?: "Por favor corrige los errores antes de continuar")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _validationState.value = ValidationState.Loading
+
+                val documentTypeId = 1
+                val request = ValidateVehicleRequestDTO(
+                    documentTypeId = documentTypeId,
+                    documentValue = _document.value,
+                    plateValue = _plate.value
+                )
+
+                val response = userRepository.validateVehicle(request)
+                _validationState.value = ValidationState.Success(response)
+            } catch (e: Exception) {
+                _validationState.value =
+                    ValidationState.Error(e.message ?: "Error desconocido")
+            }
         }
     }
 
     // Navegación exitosa
     fun onSuccessNavigated() {
-        _validationState.value = ValidationState.Initial
+        if (_validationState.value is ValidationState.Success) {
+            _validationState.value = ValidationState.Initial
+        }
     }
 
     fun onErrorShown() {
-        _validationState.value = ValidationState.Initial
+        if (_validationState.value is ValidationState.Error) {
+            _validationState.value = ValidationState.Initial
+        }
     }
 
     // Estados para la pantalla
     sealed class ValidationState {
         object Initial : ValidationState()
-        data class Success(val documentTypeId: Int, val document: String, val plate: String) : ValidationState()
+        object Loading : ValidationState()
+        data class Success(val vehicle: ValidateVehicleResult) : ValidationState()
         data class Error(val message: String) : ValidationState()
     }
 }

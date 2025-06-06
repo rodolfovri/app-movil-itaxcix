@@ -15,17 +15,11 @@ class DriverRepositoryImpl(private val apiService: ApiService) : DriverRepositor
         )
     }
 
-    override suspend fun driverActivateAvailability(userId: Int): DriverAvailabilityResult {
-        val response = apiService.driverActivateAvailability(userId)
+    override suspend fun toggleDriverAvailability(driverId: Int): DriverAvailabilityResult {
+        val response = apiService.toggleDriverAvailability(driverId)
         return DriverAvailabilityResult(
-            message = response.message
-        )
-    }
-
-    override suspend fun driverDeactivateAvailability(userId: Int): DriverAvailabilityResult {
-        val response = apiService.driverDeactivateAvailability(userId)
-        return DriverAvailabilityResult(
-            message = response.message
+            message = response.message,
+            available = response.data.available
         )
     }
 }

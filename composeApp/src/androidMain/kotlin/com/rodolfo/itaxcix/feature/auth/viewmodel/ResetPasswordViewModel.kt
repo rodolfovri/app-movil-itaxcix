@@ -18,25 +18,43 @@ class ResetPasswordViewModel @Inject constructor(
     private val _resetPasswordState = MutableStateFlow<ResetPasswordState>(ResetPasswordState.Initial)
     val resetPasswordState: StateFlow<ResetPasswordState> = _resetPasswordState.asStateFlow()
 
-    private val _userId = MutableStateFlow("")
+    private val _userId = MutableStateFlow(1)
+    private val _token = MutableStateFlow("")
     private val _newPassword = MutableStateFlow("")
+    private val _repeatPassword = MutableStateFlow("")
 
-    val userId: StateFlow<String> = _userId
+    val userId: StateFlow<Int> = _userId
+    val token: StateFlow<String> = _token
     val newPassword: StateFlow<String> = _newPassword
+    val repeatPassword: StateFlow<String> = _repeatPassword
 
     private val _userIdError = MutableStateFlow<String?>(null)
+    private val _tokenError = MutableStateFlow<String?>(null)
     private val _newPasswordError = MutableStateFlow<String?>(null)
+    private val _repeatPasswordError = MutableStateFlow<String?>(null)
 
     val userIdError: StateFlow<String?> = _userIdError.asStateFlow()
+    val tokenError: StateFlow<String?> = _tokenError.asStateFlow()
     val newPasswordError: StateFlow<String?> = _newPasswordError.asStateFlow()
+    val repeatPasswordError: StateFlow<String?> = _repeatPasswordError.asStateFlow()
 
-    fun updateUserId(value: String) {
+    fun updateToken(value: String) {
+        _token.value = value
+        resetStateIfError()
+    }
+
+    fun updateUserId(value: Int) {
         _userId.value = value
         resetStateIfError()
     }
 
     fun updateNewPassword(value: String) {
         _newPassword.value = value
+        resetStateIfError()
+    }
+
+    fun updateRepeatPassword(value: String) {
+        _repeatPassword.value = value
         resetStateIfError()
     }
 
@@ -55,7 +73,9 @@ class ResetPasswordViewModel @Inject constructor(
 
                 val result = userRepository.resetPassword(
                     userId = _userId.value,
-                    newPassword = _newPassword.value
+                    newPassword = _newPassword.value,
+                    repeatPassword = _repeatPassword.value,
+                    token = _token.value
                 )
 
                 _resetPasswordState.value = ResetPasswordState.Success(result.message)
@@ -75,7 +95,7 @@ class ResetPasswordViewModel @Inject constructor(
         val errorMessages = mutableListOf<String>()
         var isValid = true
 
-        if (_userId.value.isEmpty()) {
+        if (_userId.value <= 0) {
             _userIdError.value = "El ID de usuario no puede estar vacío"
             errorMessages.add("• El ID de usuario no puede estar vacío")
             isValid = false
@@ -113,6 +133,18 @@ class ResetPasswordViewModel @Inject constructor(
             isValid = false
         } else {
             _newPasswordError.value = null
+        }
+
+        if (_repeatPassword.value.isBlank()) {
+            _repeatPasswordError.value = "Debe repetir la contraseña"
+            errorMessages.add("• Debe repetir la contraseña")
+            isValid = false
+        } else if (_newPassword.value != _repeatPassword.value) {
+            _repeatPasswordError.value = "Las contraseñas no coinciden"
+            errorMessages.add("• Las contraseñas no coinciden")
+            isValid = false
+        } else {
+            _repeatPasswordError.value = null
         }
 
         return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)

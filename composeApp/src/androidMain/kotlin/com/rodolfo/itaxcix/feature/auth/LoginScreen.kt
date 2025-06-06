@@ -205,13 +205,19 @@ fun LoginScreen(
 
                     OutlinedTextField(
                         value = username,
-                        onValueChange = { viewModel.updateUsername(it) },
+                        onValueChange = { newValue ->
+                            val filteredValue = newValue.filter { it.isDigit() }
+                            viewModel.updateUsername(filteredValue)
+                        },
                         label = { Text(text = "Ingresa tu número de documento") },
                         isError = usernameError != null,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 10.dp),
-                        maxLines = 1,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = ITaxCixPaletaColors.Blue1,
                             unfocusedBorderColor = ITaxCixPaletaColors.Blue3,

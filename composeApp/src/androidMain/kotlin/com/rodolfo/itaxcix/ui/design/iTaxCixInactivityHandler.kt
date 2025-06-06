@@ -19,8 +19,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import com.rodolfo.itaxcix.data.local.UserData
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
-import kotlinx.datetime.Clock
-import kotlin.time.Duration.Companion.minutes
 
 @Composable
 fun ITaxCixInactivityDialog(
@@ -76,7 +74,7 @@ fun ITaxCixInactivityHandler(
     onInactivityTimeout: () -> Unit,
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
-    var lastActiveTimestamp by remember { mutableStateOf(Clock.System.now()) }
+    var lastActiveTimestamp by remember { mutableStateOf(System.currentTimeMillis()) }
     var wasInBackground by remember { mutableStateOf(false) }
 
     // Solo ejecutar el handler si el usuario está logueado
@@ -85,22 +83,25 @@ fun ITaxCixInactivityHandler(
             val observer = LifecycleEventObserver { _, event ->
                 when (event) {
                     Lifecycle.Event.ON_PAUSE -> {
-                        lastActiveTimestamp = Clock.System.now()
+                        lastActiveTimestamp = System.currentTimeMillis()
                         wasInBackground = true
                     }
                     Lifecycle.Event.ON_RESUME -> {
                         if (wasInBackground) {
-                            val currentTime = Clock.System.now()
-                            val inactiveTime = currentTime - lastActiveTimestamp
+                            val currentTime = System.currentTimeMillis()
+                            val inactiveTimeMillis = currentTime - lastActiveTimestamp
+
+                            // Convertir minutos a milisegundos para la comparación
+                            val timeoutMillis = timeoutMinutes * 60 * 1000L
 
                             // Si estuvo inactivo más del tiempo configurado
-                            if (inactiveTime > timeoutMinutes.minutes) {
+                            if (inactiveTimeMillis > timeoutMillis) {
                                 onInactivityTimeout()
                             }
 
                             wasInBackground = false
                         }
-                        lastActiveTimestamp = Clock.System.now()
+                        lastActiveTimestamp = System.currentTimeMillis()
                     }
                     else -> { /* No hacer nada para otros eventos */ }
                 }

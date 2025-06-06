@@ -1,6 +1,7 @@
 package com.rodolfo.itaxcix.data.remote
 
 import com.rodolfo.itaxcix.data.local.PreferencesManager
+import com.rodolfo.itaxcix.data.remote.api.ApiConfig
 import com.rodolfo.itaxcix.data.remote.dto.UserDTO
 import com.rodolfo.itaxcix.data.remote.api.ApiService
 import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
@@ -13,11 +14,19 @@ import com.rodolfo.itaxcix.data.remote.dto.RecoveryRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.RecoveryResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.RegisterDriverResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.RegisterResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.ResetPasswordRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.ResetPasswordResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.ToggleDriverAvailabilityResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeResponseDTO
 import io.ktor.client.HttpClient
@@ -27,6 +36,7 @@ import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -41,8 +51,8 @@ class ApiServiceImpl(
     private val client: HttpClient,
     private val preferencesManager: PreferencesManager
 ) : ApiService {
-
-    private val baseUrl = "https://149.130.161.148/api/v1"
+    
+    private val baseUrl = ApiConfig.BASE_URL
 
     override suspend fun getUsers(): List<UserDTO> {
         return safeApiCall {
@@ -71,6 +81,21 @@ class ApiServiceImpl(
         }
     }
 
+    override suspend fun validateVehicle(vehicle: ValidateVehicleRequestDTO): ValidateVehicleResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/auth/validation/vehicle") {
+                contentType(ContentType.Application.Json)
+                setBody(vehicle)
+            }
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
     override suspend fun validateBiometric(biometric: ValidateBiometricRequestDTO): ValidateBiometricResponseDTO {
         return safeApiCall {
             val response = client.post("$baseUrl/auth/validation/biometric") {
@@ -88,7 +113,7 @@ class ApiServiceImpl(
 
     override suspend fun registerCitizen(citizen: CitizenRegisterRequestDTO): RegisterResponseDTO {
         return safeApiCall {
-            val response = client.post("$baseUrl/auth/register/citizen") {
+            val response = client.post("$baseUrl/auth/registration") {
                 contentType(ContentType.Application.Json)
                 setBody(citizen)
             }
@@ -106,6 +131,36 @@ class ApiServiceImpl(
             val response = client.post("$baseUrl/auth/register/driver") {
                 contentType(ContentType.Application.Json)
                 setBody(driver)
+            }
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun verifyCodeRegister(verifyCode: VerifyCodeRegisterRequestDTO): VerifyCodeRegisterResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/auth/registration/verify-code") {
+                contentType(ContentType.Application.Json)
+                setBody(verifyCode)
+            }
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun resendCodeRegister(resendCode: ResendCodeRegisterRequestDTO): ResendCodeRegisterResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/auth/registration/resend-code") {
+                contentType(ContentType.Application.Json)
+                setBody(resendCode)
             }
             if (response.status.value in 200..299) {
                 response.body()
@@ -134,7 +189,7 @@ class ApiServiceImpl(
     override suspend fun recovery(contactTypeId: Int, contact: String): RecoveryResponseDTO {
         return safeApiCall {
             val recoveryRequest = RecoveryRequestDTO(contactTypeId, contact)
-            val response = client.post("$baseUrl/auth/recovery") {
+            val response = client.post("$baseUrl/auth/recovery/start") {
                 contentType(ContentType.Application.Json)
                 setBody(recoveryRequest)
             }
@@ -147,10 +202,10 @@ class ApiServiceImpl(
         }
     }
 
-    override suspend fun verifyCode(code: String, contactTypeId: Int, contact: String): VerifyCodeResponseDTO {
+    override suspend fun verifyCode(userId: Int, code: String): VerifyCodeResponseDTO {
         return safeApiCall {
-            val verifyCodeRequest = VerifyCodeRequestDTO(code, contactTypeId, contact)
-            val response = client.post("$baseUrl/auth/verify-code") {
+            val verifyCodeRequest = VerifyCodeRequestDTO(userId, code)
+            val response = client.post("$baseUrl/auth/recovery/verify-code") {
                 contentType(ContentType.Application.Json)
                 setBody(verifyCodeRequest)
             }
@@ -163,11 +218,15 @@ class ApiServiceImpl(
         }
     }
 
-    override suspend fun resetPassword(userId: String, newPassword: String): ResetPasswordResponseDTO {
+    override suspend fun resetPassword(userId: Int, newPassword: String, repeatPassword: String, token: String): ResetPasswordResponseDTO {
         return safeApiCall {
-            val response = client.post("$baseUrl/auth/reset-password") {
+            val resetPasswordRequest = ResetPasswordRequestDTO(userId, newPassword, repeatPassword)
+            val response = client.post("$baseUrl/auth/recovery/change-password") {
                 contentType(ContentType.Application.Json)
-                setBody(mapOf("userId" to userId, "newPassword" to newPassword))
+                headers {
+                    append("Authorization", "Bearer $token")
+                }
+                setBody(resetPasswordRequest)
             }
             if (response.status.value in 200..299) {
                 response.body()
@@ -193,31 +252,11 @@ class ApiServiceImpl(
         }
     }
 
-    override suspend fun driverActivateAvailability(driverId: Int): DriverAvailabilityResponseDTO {
+    override suspend fun toggleDriverAvailability(driverId: Int): ToggleDriverAvailabilityResponseDTO {
         return safeApiCall {
-            val driverAvailabilityRequestDTO = DriverAvailabilityRequestDTO(driverId)
-            val response = client.post("$baseUrl/driver/activate-availability") {
+            val response = client.patch("$baseUrl/drivers/$driverId/toggle-active") {
                 addAuthToken()
                 contentType(ContentType.Application.Json)
-                setBody(driverAvailabilityRequestDTO)
-            }
-
-            if (response.status.value in 200..299) {
-                response.body()
-            } else {
-                val errorBody = response.bodyAsText()
-                throw Exception(parseErrorMessage(errorBody))
-            }
-        }
-    }
-
-    override suspend fun driverDeactivateAvailability(driverId: Int): DriverAvailabilityResponseDTO {
-        return safeApiCall {
-            val driverAvailabilityRequestDTO = DriverAvailabilityRequestDTO(driverId)
-            val response = client.post("$baseUrl/driver/deactivate-availability") {
-                addAuthToken()
-                contentType(ContentType.Application.Json)
-                setBody(driverAvailabilityRequestDTO)
             }
 
             if (response.status.value in 200..299) {

@@ -1,4 +1,4 @@
-package com.rodolfo.itaxcix.feature.citizen
+package com.rodolfo.itaxcix.feature.driver
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -62,7 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.rodolfo.itaxcix.feature.auth.viewmodel.CameraValidationViewModel
+import com.rodolfo.itaxcix.feature.driver.viewModel.CameraValidationDriverViewModel
 import com.rodolfo.itaxcix.services.camera.CameraManager
 import com.rodolfo.itaxcix.services.camera.CameraView
 import com.rodolfo.itaxcix.services.camera.analyzers.FaceDetectionAnalyzer
@@ -73,16 +73,17 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CameraValidationScreen(
-    viewModel: CameraValidationViewModel = hiltViewModel(),
+fun CameraValidationDriverScreen(
+    viewModel: CameraValidationDriverViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {},
-    onValidationSuccess: (Int?) -> Unit = { _ -> }
+    onValidationSuccess: (Int?, Int?) -> Unit = { _, _ -> }
 ) {
-    // Estados existentes
+
     val validationState by viewModel.validationState.collectAsState()
     val validationProgress by viewModel.validationProgress.collectAsState()
     val faceDetected by viewModel.faceDetected.collectAsState()
     val personId by viewModel.personId.collectAsState()
+    val vehicleId by viewModel.vehicleId.collectAsState()
 
     var cameraManager by remember { mutableStateOf<CameraManager?>(null) }
     var currentCameraSelector by remember { mutableStateOf(CameraSelector.DEFAULT_FRONT_CAMERA) }
@@ -96,8 +97,8 @@ fun CameraValidationScreen(
     val context = LocalContext.current
 
     // Indicadores para el ITaxCixProgressRequest
-    val isLoading = validationState is CameraValidationViewModel.ValidationState.BiometricValidating
-    val isSuccess = validationState is CameraValidationViewModel.ValidationState.BiometricSuccess
+    val isLoading = validationState is CameraValidationDriverViewModel.ValidationState.BiometricValidating
+    val isSuccess = validationState is CameraValidationDriverViewModel.ValidationState.BiometricSuccess
 
     // Estado para permisos de cámara
     var hasCameraPermission by remember {
@@ -136,7 +137,7 @@ fun CameraValidationScreen(
     // Reaccionamos cuando el estado de validación cambia a Success
     LaunchedEffect(validationState) {
         when (val state = validationState) {
-            is CameraValidationViewModel.ValidationState.Success -> {
+            is CameraValidationDriverViewModel.ValidationState.Success -> {
                 if (!photoTaken) {
                     cameraManager?.takePhoto(
                         executor = ContextCompat.getMainExecutor(context),
@@ -150,12 +151,12 @@ fun CameraValidationScreen(
                     )
                 }
             }
-            is CameraValidationViewModel.ValidationState.BiometricSuccess -> {
+            is CameraValidationDriverViewModel.ValidationState.BiometricSuccess -> {
                 delay(1800) // Esperar 1.8 segundos para mostrar el mensaje de éxito
-                onValidationSuccess(personId)
+                onValidationSuccess(personId, vehicleId)
                 viewModel.onSuccessShown()
             }
-            is CameraValidationViewModel.ValidationState.BiometricError -> {
+            is CameraValidationDriverViewModel.ValidationState.BiometricError -> {
                 isSuccessSnackbar = false
                 snackbarHostState.showSnackbar(
                     message = "Error: ${state.message}",
@@ -164,7 +165,7 @@ fun CameraValidationScreen(
                 viewModel.onErrorShown()
                 resetValidation()
             }
-            is CameraValidationViewModel.ValidationState.BiometricValidating -> {
+            is CameraValidationDriverViewModel.ValidationState.BiometricValidating -> {
                 Log.d("CameraValidation", "Biometric validation in progress...")
             }
             else -> {
@@ -216,7 +217,7 @@ fun CameraValidationScreen(
                         }
                     },
                     actions = {
-                        if (hasCameraPermission && validationState !is CameraValidationViewModel.ValidationState.Success) {
+                        if (hasCameraPermission && validationState !is CameraValidationDriverViewModel.ValidationState.Success) {
                             IconButton(onClick = {
                                 cameraManager?.switchCamera()
                                 currentCameraSelector = if (currentCameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA) {
@@ -276,18 +277,18 @@ fun CameraValidationScreen(
                         ) {
                             Text(
                                 text = when (validationState) {
-                                    is CameraValidationViewModel.ValidationState.Waiting ->
+                                    is CameraValidationDriverViewModel.ValidationState.Waiting ->
                                         if (faceDetected) "Rostro detectado, iniciando validación"
                                         else "Coloque su rostro frente a la cámara"
-                                    is CameraValidationViewModel.ValidationState.Validating ->
+                                    is CameraValidationDriverViewModel.ValidationState.Validating ->
                                         "Validando su identidad..."
-                                    is CameraValidationViewModel.ValidationState.Success ->
+                                    is CameraValidationDriverViewModel.ValidationState.Success ->
                                         if (photoTaken) "Fotografía capturada correctamente" else "¡Validación exitosa! Capturando fotografía..."
-                                    is CameraValidationViewModel.ValidationState.BiometricError ->
+                                    is CameraValidationDriverViewModel.ValidationState.BiometricError ->
                                         "Error en la validación biométrica"
-                                    is CameraValidationViewModel.ValidationState.BiometricSuccess ->
+                                    is CameraValidationDriverViewModel.ValidationState.BiometricSuccess ->
                                         "Validación biométrica exitosa"
-                                    CameraValidationViewModel.ValidationState.BiometricValidating ->
+                                    CameraValidationDriverViewModel.ValidationState.BiometricValidating ->
                                         "Validando datos biométricos..."
                                 },
                                 color = Color.White,
@@ -298,14 +299,14 @@ fun CameraValidationScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             when (validationState) {
-                                is CameraValidationViewModel.ValidationState.Validating -> {
+                                is CameraValidationDriverViewModel.ValidationState.Validating -> {
                                     LinearProgressIndicator(
                                         progress = { validationProgress },
                                         modifier = Modifier.fillMaxWidth(),
                                         color = ITaxCixPaletaColors.Blue1
                                     )
                                 }
-                                is CameraValidationViewModel.ValidationState.Success -> {
+                                is CameraValidationDriverViewModel.ValidationState.Success -> {
                                     Icon(
                                         imageVector = Icons.Default.CheckCircle,
                                         contentDescription = "Validación exitosa",
@@ -338,7 +339,7 @@ fun CameraValidationScreen(
                     }
 
                     // Menú de opciones (visible después de validación exitosa y foto tomada)
-                    if (validationState is CameraValidationViewModel.ValidationState.Success && photoTaken) {
+                    if (validationState is CameraValidationDriverViewModel.ValidationState.Success && photoTaken) {
                         Surface(
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
@@ -476,4 +477,5 @@ fun CameraValidationScreen(
             successMessage = "Identidad verificada correctamente"
         )
     }
+
 }

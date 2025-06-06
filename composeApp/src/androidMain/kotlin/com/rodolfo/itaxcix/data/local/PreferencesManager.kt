@@ -27,7 +27,8 @@ class PreferencesManager @Inject constructor(
     // Definir claves para preferencias
     private object PreferencesKeys {
         val USER_ID = intPreferencesKey("user_id")
-        val USER_NAME = stringPreferencesKey("user_name")
+        val USER_FIRST_NAME = stringPreferencesKey("user_first_name")
+        val USER_LAST_NAME = stringPreferencesKey("user_last_name")
         val USER_NICKNAME = stringPreferencesKey("user_nickname")
         val USER_DOCUMENT = stringPreferencesKey("user_document")
         val USER_EMAIL = stringPreferencesKey("user_email")
@@ -52,7 +53,8 @@ class PreferencesManager @Inject constructor(
         CoroutineScope(Dispatchers.IO).launch {
             dataStore.data.collect { preferences ->
                 val userId = preferences[PreferencesKeys.USER_ID]
-                val userName = preferences[PreferencesKeys.USER_NAME]
+                val userFirstName = preferences[PreferencesKeys.USER_FIRST_NAME]
+                val userLastName = preferences[PreferencesKeys.USER_LAST_NAME]
                 val nickname = preferences[PreferencesKeys.USER_NICKNAME]
                 val userDocument = preferences[PreferencesKeys.USER_DOCUMENT] ?: ""
                 val email = preferences[PreferencesKeys.USER_EMAIL] ?: ""
@@ -67,11 +69,12 @@ class PreferencesManager @Inject constructor(
                 val lastDriverUpdate = preferences[PreferencesKeys.LAST_DRIVER_UPDATE]
                 val authToken = preferences[PreferencesKeys.AUTH_TOKEN]
 
-                if (userId != null && userName != null && nickname != null) {
+                if (userId != null && userFirstName != null && userLastName != null) {
                     _userData.value = UserData(
                         id = userId,
-                        name = userName,
-                        nickname = nickname,
+                        firstName = userFirstName,
+                        lastName = userLastName,
+                        nickname = nickname ?: "",
                         document = userDocument,
                         email = email,
                         phone = phone,
@@ -94,7 +97,8 @@ class PreferencesManager @Inject constructor(
     suspend fun saveUserData(userData: UserData) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.USER_ID] = userData.id
-            preferences[PreferencesKeys.USER_NAME] = userData.name
+            preferences[PreferencesKeys.USER_FIRST_NAME] = userData.firstName
+            preferences[PreferencesKeys.USER_LAST_NAME] = userData.lastName
             preferences[PreferencesKeys.USER_NICKNAME] = userData.nickname
             preferences[PreferencesKeys.USER_EMAIL] = userData.email
             preferences[PreferencesKeys.USER_PHONE] = userData.phone
@@ -131,7 +135,8 @@ class PreferencesManager @Inject constructor(
 
 data class UserData(
     val id: Int,
-    val name: String,
+    val firstName: String,
+    val lastName: String,
     val nickname: String,
     val document: String = "",
     val email: String = "",

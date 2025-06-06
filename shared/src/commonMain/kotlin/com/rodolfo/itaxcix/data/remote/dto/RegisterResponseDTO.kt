@@ -5,6 +5,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RegisterResponseDTO (
     val message: String = "",
-    val userId: String = "",
-    val personId: String = "",
-)
+    val data : RegisterDataDTO
+) {
+    @Serializable
+    data class RegisterDataDTO(
+        val userId: Int
+    )
+}

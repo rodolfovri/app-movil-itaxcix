@@ -2,6 +2,7 @@ package com.rodolfo.itaxcix.feature.auth.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodolfo.itaxcix.domain.model.RecoveryResult
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,7 +64,8 @@ class RecoveryViewModel @Inject constructor(
                     contactTypeId = _contactTypeId.value,
                     contact = contactValue
                 )
-                _recoveryState.value = RecoveryState.Success(result.message)
+
+                _recoveryState.value = RecoveryState.Success(result)
             } catch (e: Exception) {
                 _recoveryState.value = RecoveryState.Error(e.message ?: "Error desconocido")
             }
@@ -112,7 +114,7 @@ class RecoveryViewModel @Inject constructor(
     sealed class RecoveryState {
         object Initial : RecoveryState()
         object Loading : RecoveryState()
-        data class Success(val message: String) : RecoveryState()
+        data class Success(val response: RecoveryResult) : RecoveryState()
         data class Error(val message: String) : RecoveryState()
     }
 }

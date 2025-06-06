@@ -1,7 +1,9 @@
 package com.rodolfo.itaxcix.feature.auth.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodolfo.itaxcix.domain.model.VerifyCodeResult
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,17 +23,25 @@ class VerifyCodeViewModel @Inject constructor(
     private val _code = MutableStateFlow("")
     private val _contact = MutableStateFlow("")
     private val _contactTypeId = MutableStateFlow(1)
+    private val _userId = MutableStateFlow(1)
 
     val code: StateFlow<String> = _code
     val contact: StateFlow<String> = _contact
     val contactTypeId: StateFlow<Int> = _contactTypeId
+    val userId: StateFlow<Int> = _userId
 
     private val _codeError = MutableStateFlow<String?>(null)
     private val _contactError = MutableStateFlow<String?>(null)
     private val _contactTypeError = MutableStateFlow<String?>(null)
+    private val _userIdError = MutableStateFlow<String?>(null)
 
     val codeError: StateFlow<String?> = _codeError.asStateFlow()
     val contactError: StateFlow<String?> = _contactError.asStateFlow()
+
+    fun updateUserId(value: Int) {
+        _userId.value = value
+        resetStateIfError()
+    }
 
     fun updateCode(value: String) {
         _code.value = value
@@ -66,20 +76,13 @@ class VerifyCodeViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _verifyCodeState.value = VerifyCodeState.Loading
-
-                val contactValue = if (_contactTypeId.value == 2 && !_contact.value.startsWith("+51")) {
-                    "+51${_contact.value}"
-                } else {
-                    _contact.value
-                }
-
+4
                 val result = userRepository.verifyCode(
-                    code = _code.value,
-                    contactTypeId = _contactTypeId.value,
-                    contact = contactValue
+                    userId = _userId.value,
+                    code = _code.value
                 )
 
-                _verifyCodeState.value = VerifyCodeState.Success(result.message, result.userId)
+                _verifyCodeState.value = VerifyCodeState.Success(result)
             } catch (e: Exception) {
                 _verifyCodeState.value = VerifyCodeState.Error(e.message ?: "Error desconocido")
             }
@@ -136,7 +139,7 @@ class VerifyCodeViewModel @Inject constructor(
     sealed class VerifyCodeState {
         object Initial : VerifyCodeState()
         object Loading : VerifyCodeState()
-        data class Success(val message: String, val userId: String) : VerifyCodeState()
+        data class Success(val response: VerifyCodeResult) : VerifyCodeState()
         data class Error(val message: String) : VerifyCodeState()
     }
 }

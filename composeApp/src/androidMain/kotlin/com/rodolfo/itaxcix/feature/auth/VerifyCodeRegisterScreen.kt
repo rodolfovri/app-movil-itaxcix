@@ -1,9 +1,6 @@
 package com.rodolfo.itaxcix.feature.auth
 
-import android.util.Log
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -14,9 +11,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -25,17 +19,12 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
@@ -46,74 +35,78 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rodolfo.itaxcix.R
-import com.rodolfo.itaxcix.feature.auth.viewmodel.RecoveryViewModel
+import com.rodolfo.itaxcix.feature.auth.viewmodel.VerifyCodeRegisterViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
 import kotlinx.coroutines.delay
 
+
 @Preview
 @Composable
-fun RecoveryScreenPreview() {
-    RecoveryScreen(
-        onBackClick = {  },
-        onVerifyClick = { _, _, _ ->
-
-        }
+fun VerifyCodeRegisterScreenPreview() {
+    VerifyCodeRegisterScreen(
+        onBackClick = {},
+        onVerifySuccess = {}
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecoveryScreen(
-    viewModel: RecoveryViewModel = hiltViewModel(),
+fun VerifyCodeRegisterScreen(
+    viewModel: VerifyCodeRegisterViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {},
-    onVerifyClick: (contactTypeId: Int, contact: String, userId: Int) -> Unit,
+    onVerifySuccess: () -> Unit,
 ) {
 
-    val recoveryState by viewModel.recoveryState.collectAsState()
-    val contact by viewModel.contact.collectAsState()
-    val contactError by viewModel.contactError.collectAsState()
+    val verifyCodeRegisterState by viewModel.verifyCodeRegisterState.collectAsState()
+    val code by viewModel.code.collectAsState()
+    val codeError by viewModel.codeError.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val isLoading = recoveryState is RecoveryViewModel.RecoveryState.Loading
-    val isRedirecting = recoveryState is RecoveryViewModel.RecoveryState.Success
     var isSuccessSnackbar by remember { mutableStateOf(false) }
 
-    var selectedContactMethod by remember { mutableStateOf("Email") }
-    val contactMethodLabel = if (selectedContactMethod == "Email") {
-        "Ingresa tu correo electrónico"
-    } else {
-        "Ingresa tu número de teléfono"
-    }
+    val isSuccess = viewModel.verifyCodeRegisterState.collectAsState().value is VerifyCodeRegisterViewModel.VerifyCodeRegisterState.Success
+    val isLoading = viewModel.verifyCodeRegisterState.collectAsState().value is VerifyCodeRegisterViewModel.VerifyCodeRegisterState.Loading
 
-    LaunchedEffect(key1 = recoveryState) {
-        when(val state = recoveryState) {
-            is RecoveryViewModel.RecoveryState.Success -> {
+    val timeLeftState = remember { mutableIntStateOf(5 * 60) }
+
+    LaunchedEffect(key1 = verifyCodeRegisterState) {
+        when (val state = verifyCodeRegisterState) {
+            is VerifyCodeRegisterViewModel.VerifyCodeRegisterState.Success -> {
                 isSuccessSnackbar = true
                 delay(2000)
-                onVerifyClick(viewModel.contactTypeId.value, viewModel.contact.value, state.response.userId)
+                onVerifySuccess()
                 viewModel.onSuccessShown()
             }
-            is RecoveryViewModel.RecoveryState.Error -> {
+            is VerifyCodeRegisterViewModel.VerifyCodeRegisterState.ResendCodeSuccess -> {
+                isSuccessSnackbar = true
+                snackbarHostState.showSnackbar(
+                    message = "Código reenviado exitosamente. Puedes verificar tu correo o SMS.",
+                    duration = SnackbarDuration.Short
+                )
+                viewModel.onResendCodeSuccessShown()
+            }
+            is VerifyCodeRegisterViewModel.VerifyCodeRegisterState.Error -> {
+                isSuccessSnackbar = false
                 snackbarHostState.showSnackbar(
                     message = state.message,
                     duration = SnackbarDuration.Short
@@ -191,7 +184,7 @@ fun RecoveryScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Image(
-                        painter = painterResource(R.drawable.recovery_user),
+                        painter = painterResource(R.drawable.register_verify_code),
                         contentDescription = "Recuperar contraseña",
                         modifier = Modifier
                             .fillMaxWidth(0.80f)
@@ -199,7 +192,7 @@ fun RecoveryScreen(
                     )
 
                     Text(
-                        text = "Recupera tu acceso",
+                        text = "¡Último paso para completar tu registro!",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
@@ -210,7 +203,7 @@ fun RecoveryScreen(
                     )
 
                     Text(
-                        text = "Ingresa tu correo o número de teléfono para enviarte un código de verificación.",
+                        text = "Te hemos enviado un código de verificación a tu correo o SMS.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray,
                         modifier = Modifier
@@ -219,104 +212,18 @@ fun RecoveryScreen(
                         textAlign = TextAlign.Center
                     )
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 5.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp) // espacio entre los dos cuadros
-                    ) {
-                        // Opción Email
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .border(
-                                    width = 1.dp,
-                                    color = ITaxCixPaletaColors.Blue3,
-                                    shape = MaterialTheme.shapes.small
-                                )
-                                .padding(8.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedContactMethod = "Email" }
-                            ) {
-                                RadioButton(
-                                    selected = selectedContactMethod == "Email",
-                                    onClick = {
-                                        selectedContactMethod = "Email"
-                                        viewModel.updateContactTypeId(1)
-                                        viewModel.updateContact("")
-                                    },
-                                    colors = RadioButtonDefaults.colors(
-                                        selectedColor = ITaxCixPaletaColors.Blue1,
-                                        unselectedColor = ITaxCixPaletaColors.Blue1
-                                    )
-                                )
-                                Text(
-                                    text = "Email",
-                                    color = ITaxCixPaletaColors.Blue1
-                                )
-                            }
-                        }
-
-                        // Opción Teléfono
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .border(
-                                    width = 1.dp,
-                                    color = ITaxCixPaletaColors.Blue3,
-                                    shape = MaterialTheme.shapes.small
-                                )
-                                .padding(8.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedContactMethod = "Teléfono" }
-                            ) {
-                                RadioButton(
-                                    selected = selectedContactMethod == "Teléfono",
-                                    onClick = {
-                                        selectedContactMethod = "Teléfono"
-                                        viewModel.updateContactTypeId(2)
-                                        viewModel.updateContact("")
-                                    },
-                                    colors = RadioButtonDefaults.colors(
-                                        selectedColor = ITaxCixPaletaColors.Blue1,
-                                        unselectedColor = ITaxCixPaletaColors.Blue1
-                                    )
-                                )
-                                Text(
-                                    text = "Teléfono",
-                                    color = ITaxCixPaletaColors.Blue1
-                                )
-                            }
-                        }
-                    }
-
                     OutlinedTextField(
-                        value = contact,
+                        value = code,
                         onValueChange = {
-                            viewModel.updateContact(it)
-                            viewModel.updateContactTypeId(if (selectedContactMethod == "Email") 1 else 2)
-
-                        },
-                        label = { Text(contactMethodLabel) },
-                        isError = contactError != null,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = if (selectedContactMethod == "Email") {
-                                KeyboardType.Email
-                            } else {
-                                KeyboardType.Phone
+                            if (it.length <= 6) {
+                                viewModel.updateCode(it)
                             }
-                        ),
+                        },
+                        label = { Text("Ingresa el código") },
+                        isError = codeError != null,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 30.dp),
+                            .padding(bottom = 10.dp),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = ITaxCixPaletaColors.Blue1,
@@ -329,10 +236,16 @@ fun RecoveryScreen(
                             )
                         )
                     )
+
+                    SendCode(
+                        viewModel = viewModel,
+                        timeLeft = timeLeftState
+                    )
+
                 }
 
                 Button(
-                    onClick = { viewModel.recoverPassword() },
+                    onClick = { viewModel.verifyCode() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 12.dp),
@@ -343,7 +256,7 @@ fun RecoveryScreen(
                     )
                 ) {
                     Text(
-                        text = "Enviar código de recuperación",
+                        text = "Verificar código",
                         style = MaterialTheme.typography.labelLarge,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -354,14 +267,60 @@ fun RecoveryScreen(
             }
         }
 
-        // Overlay de carga que cubre toda la pantalla cuando está en estado Loading
+        // Uso del componente ITaxCixProgressRequest para manejar estados de carga y éxito
         ITaxCixProgressRequest(
-            isVisible = isLoading || isRedirecting,
-            isSuccess = isRedirecting,
-            loadingTitle = "Procesando",
-            successTitle = "Contacto verificado",
-            loadingMessage = "Verificando tu $selectedContactMethod...",
-            successMessage = "Redirigiendo a la pantalla de verificación...",
+            isVisible = isLoading || isSuccess,
+            isSuccess = isSuccess,
+            loadingTitle = "Verificando código",
+            successTitle = "Verificación exitosa",
+            loadingMessage = "Estamos validando tu código...",
+            successMessage = "¡Tu cuenta ha sido activada! Redirigiendo..."
         )
     }
+}
+
+@Composable
+fun SendCode(
+    viewModel: VerifyCodeRegisterViewModel,
+    timeLeft: MutableState<Int>
+) {
+    val enabled = timeLeft.value <= 0
+    val resendCodeState = viewModel.verifyCodeRegisterState.collectAsState().value
+
+    // Temporizador
+    LaunchedEffect(Unit) {
+        while (timeLeft.value > 0) {
+            delay(1000L)
+            timeLeft.value -= 1
+        }
+    }
+
+    // Resetear el contador cuando se reenvía el código exitosamente
+    LaunchedEffect(resendCodeState) {
+        if (resendCodeState is VerifyCodeRegisterViewModel.VerifyCodeRegisterState.ResendCodeSuccess) {
+            timeLeft.value = 5 * 60 // Reiniciar el contador a 5 minutos
+        }
+    }
+
+    // Formato MM:SS
+    val minutes = timeLeft.value / 60
+    val seconds = timeLeft.value % 60
+    val formattedTime = String.format("%02d:%02d", minutes, seconds)
+
+    Text(
+        text = if (enabled) "Solicitar nuevo código" else "Reenviar código en $formattedTime",
+        style = MaterialTheme.typography.bodyMedium.copy(
+            color = if (enabled) ITaxCixPaletaColors.Blue1 else Color.Gray,
+        ),
+        modifier = Modifier
+            .padding(bottom = 20.dp)
+            .clickable(
+                enabled = enabled,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                viewModel.resendCode()
+            },
+        textAlign = TextAlign.Center
+    )
 }

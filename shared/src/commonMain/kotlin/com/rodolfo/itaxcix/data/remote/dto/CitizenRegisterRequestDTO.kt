@@ -4,10 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CitizenRegisterRequestDTO (
-    val documentTypeId: Int,
-    val document: String,
-    val alias: String,
     val password: String,
     val contactTypeId: Int,
-    val contact: String,
+    val contactValue: String,
+    val personId: Int,
+    val vehicleId: Int? = null,
 )

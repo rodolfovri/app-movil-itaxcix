@@ -26,6 +26,7 @@ import com.rodolfo.itaxcix.feature.auth.LoginScreen
 import com.rodolfo.itaxcix.feature.auth.RecoveryScreen
 import com.rodolfo.itaxcix.feature.auth.RegisterOptionsScreen
 import com.rodolfo.itaxcix.feature.auth.ResetPasswordScreen
+import com.rodolfo.itaxcix.feature.auth.VerifyCodeRegisterScreen
 import com.rodolfo.itaxcix.feature.auth.VerifyCodeScreen
 import com.rodolfo.itaxcix.feature.auth.WelcomeHomeScreen
 import com.rodolfo.itaxcix.feature.auth.viewmodel.CameraValidationViewModel
@@ -33,15 +34,18 @@ import com.rodolfo.itaxcix.feature.auth.viewmodel.LoginViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.RecoveryViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.RegisterViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.ResetPasswordViewModel
+import com.rodolfo.itaxcix.feature.auth.viewmodel.VerifyCodeRegisterViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.VerifyCodeViewModel
 import com.rodolfo.itaxcix.feature.citizen.CameraValidationScreen
 import com.rodolfo.itaxcix.feature.citizen.dashboard.DashboardCitizenScreen
 import com.rodolfo.itaxcix.feature.citizen.RegisterCitizenScreen
 import com.rodolfo.itaxcix.feature.citizen.RegisterValidationCitizenScreen
+import com.rodolfo.itaxcix.feature.driver.CameraValidationDriverScreen
 import com.rodolfo.itaxcix.feature.driver.dashboard.DashboardDriverScreen
 import com.rodolfo.itaxcix.feature.driver.RegisterDriverScreen
 import com.rodolfo.itaxcix.feature.driver.RegisterValidationDriverScreen
 import com.rodolfo.itaxcix.feature.driver.viewModel.AuthViewModel
+import com.rodolfo.itaxcix.feature.driver.viewModel.CameraValidationDriverViewModel
 import com.rodolfo.itaxcix.feature.driver.viewModel.RegisterDriverViewModel
 import com.rodolfo.itaxcix.ui.design.ITaxCixInactivityDialog
 import com.rodolfo.itaxcix.ui.design.ITaxCixInactivityHandler
@@ -51,14 +55,16 @@ object Routes {
     const val WELCOME = "welcome"
     const val LOGIN = "login"
     const val RECOVERY = "recovery"
-    const val VERIFY_CODE = "verify_code/{contactTypeId}/{contact}"
-    const val RESET_PASSWORD = "reset_password/{userId}"
+    const val VERIFY_CODE = "verify_code/{contactTypeId}/{contact}/{userId}"
+    const val RESET_PASSWORD = "reset_password/{userId}/{token}"
     const val REGISTER_OPTIONS = "register_options"
     const val REGISTER_VALIDATION_CITIZEN = "citizen_register_validation"
     const val REGISTER_VALIDATION_DRIVER = "driver_register_validation"
     const val REGISTER_CAMERA = "camera_validation/{personId}"
+    const val REGISTER_CAMERA_DRIVER = "camera_validation_driver/{personId}/{vehicleId}"
     const val REGISTER_CITIZEN = "citizen_register/{personId}"
-    const val REGISTER_DRIVER = "driver_register/{documentTypeId}/{document}/{plate}"
+    const val REGISTER_DRIVER = "driver_register/{personId}/{vehicleId}"
+    const val VERIFY_CODE_REGISTER = "verify_code_register/{userId}"
     const val DASHBOARD_CITIZEN = "dashboard_citizen"
     const val DASHBOARD_DRIVER = "dashboard_driver"
 }
@@ -167,13 +173,13 @@ fun AppNavigation(
             val personId = backStackEntry.arguments?.getInt("personId") ?: 1
 
             val viewModel = hiltViewModel<RegisterViewModel>()
+            viewModel.updatePersonId(personId)
 
             RegisterCitizenScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
-                onRegisterSuccess = {
-                    // Aquí puedes manejar la navegación después de un registro exitoso
-                    navController.navigate(Routes.LOGIN) {
+                onRegisterSuccess = { userId ->
+                    navController.navigate("verify_code_register/${userId}") {
                         popUpTo(Routes.WELCOME) { inclusive = false }
                     }
                 },
@@ -183,39 +189,64 @@ fun AppNavigation(
 
         composable(Routes.REGISTER_VALIDATION_DRIVER) {
             RegisterValidationDriverScreen(
-                onRegisterClick = { documentTypeId, document, plate ->
+                onBackClick = { navController.popBackStack() },
+                onCameraClick = { personId, vehicleId ->
                     navController.navigate(
-                        "driver_register/$documentTypeId/$document/$plate"
+                        "camera_validation_driver/$personId/$vehicleId"
                     ) {
-                        launchSingleTop = true // Evitar múltiples instancias de la misma pantalla
+                        launchSingleTop = true
                     }
-                },
-                onBackClick = { navController.popBackStack() }
+                }
+            )
+        }
+
+        composable(
+            route = Routes.REGISTER_CAMERA_DRIVER,
+            arguments = listOf(
+                navArgument("personId") { type = NavType.StringType },
+                navArgument("vehicleId") { type = NavType.StringType }
+            ),
+        ) { backStackEntry ->
+            val personId = backStackEntry.arguments?.getString("personId")?.toIntOrNull()
+            val vehicleId = backStackEntry.arguments?.getString("vehicleId")?.toIntOrNull()
+
+            val viewModel = hiltViewModel<CameraValidationDriverViewModel>()
+            viewModel.setDocumentData(personId)
+            viewModel.setVehicleId(vehicleId)
+
+            CameraValidationDriverScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() },
+                onValidationSuccess = { personId, vehicleId ->
+                    navController.navigate(
+                        "driver_register/$personId/$vehicleId"
+                    ) {
+                        popUpTo(Routes.REGISTER_VALIDATION_DRIVER) { inclusive = true }
+                    }
+                }
             )
         }
 
         composable(
             route = Routes.REGISTER_DRIVER,
             arguments = listOf(
-                navArgument("documentTypeId") { type = NavType.IntType },
-                navArgument("document") { type = NavType.StringType },
-                navArgument("plate") { type = NavType.StringType }
+                navArgument("personId") { type = NavType.IntType },
+                navArgument("vehicleId") { type = NavType.IntType },
             )
         ) { backStackEntry ->
-            val documentTypeId = backStackEntry.arguments?.getInt("documentTypeId") ?: 1
-            val document = backStackEntry.arguments?.getString("document") ?: ""
-            val plate = backStackEntry.arguments?.getString("plate") ?: ""
+            val personId = backStackEntry.arguments?.getInt("personId") ?: 1
+            val vehicleId = backStackEntry.arguments?.getInt("vehicleId") ?: 1
 
             val viewModel = hiltViewModel<RegisterDriverViewModel>()
-            viewModel.updateDocumentTypeId(documentTypeId)
-            viewModel.updateDocument(document)
-            viewModel.updateLicensePlate(plate)
+            viewModel.updatePersonId(personId)
+            viewModel.updateVehicleId(vehicleId)
 
             RegisterDriverScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
-                onRegisterSuccess = {
-                    navController.navigate(Routes.LOGIN) {
+                onRegisterSuccess = { userId ->
+                    // Navegar a la pantalla de verificación de código en lugar de login
+                    navController.navigate("verify_code_register/${userId}") {
                         popUpTo(Routes.WELCOME) { inclusive = false }
                     }
                 },
@@ -264,9 +295,9 @@ fun AppNavigation(
             RecoveryScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
-                onVerifyClick = { contactTypeId: Int, contact: String ->
+                onVerifyClick = { contactTypeId: Int, contact: String, userId ->
                     navController.navigate(
-                        "verify_code/$contactTypeId/$contact"
+                        "verify_code/$contactTypeId/$contact/$userId"
                     ) {
                         launchSingleTop = true // Evitar múltiples instancias de la misma pantalla
                     }
@@ -278,20 +309,23 @@ fun AppNavigation(
             route = Routes.VERIFY_CODE,
             arguments = listOf(
                 navArgument("contactTypeId") { type = NavType.IntType },
-                navArgument("contact") { type = NavType.StringType }
+                navArgument("contact") { type = NavType.StringType },
+                navArgument("userId") { type = NavType.IntType }
             )
         ) { backStackEntry ->
             val contactTypeId = backStackEntry.arguments?.getInt("contactTypeId") ?: 1
             val contact = backStackEntry.arguments?.getString("contact") ?: ""
+            val userId = backStackEntry.arguments?.getInt("userId") ?: 0
 
             val viewModel = hiltViewModel<VerifyCodeViewModel>()
             viewModel.updateContactTypeId(contactTypeId)
             viewModel.updateContact(contact)
+            viewModel.updateUserId(userId)
 
             VerifyCodeScreen(
                 viewModel = viewModel,
-                onVerifyCodeSuccess = { userId ->
-                    navController.navigate("reset_password/$userId") {
+                onVerifyCodeSuccess = { userId, token ->
+                    navController.navigate("reset_password/$userId/$token") {
                         launchSingleTop = true // Evitar múltiples instancias de la misma pantalla
                     }
                 },
@@ -301,13 +335,16 @@ fun AppNavigation(
         composable(
             route = Routes.RESET_PASSWORD,
             arguments = listOf(
-                navArgument("userId") { type = NavType.IntType }
+                navArgument("userId") { type = NavType.IntType },
+                navArgument("token") { type = NavType.StringType }
             )
         ) { backStackEntry ->
             val userId = backStackEntry.arguments?.getInt("userId") ?: 0
+            val token = backStackEntry.arguments?.getString("token") ?: ""
 
             val viewModel = hiltViewModel<ResetPasswordViewModel>()
-            viewModel.updateUserId(userId.toString())
+            viewModel.updateUserId(userId)
+            viewModel.updateToken(token)
 
             ResetPasswordScreen(
                 viewModel = viewModel,
@@ -339,6 +376,28 @@ fun AppNavigation(
                         "citizen_register/$personId"
                     ) {
                         launchSingleTop = true
+                    }
+                }
+            )
+        }
+
+        composable(
+            route = Routes.VERIFY_CODE_REGISTER,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getInt("userId") ?: 0
+
+            val viewModel = hiltViewModel<VerifyCodeRegisterViewModel>()
+            viewModel.updateUserId(userId)
+
+            VerifyCodeRegisterScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() },
+                onVerifySuccess = {
+                    navController.navigate(Routes.LOGIN) {
+                        popUpTo(Routes.WELCOME) { inclusive = false }
                     }
                 }
             )

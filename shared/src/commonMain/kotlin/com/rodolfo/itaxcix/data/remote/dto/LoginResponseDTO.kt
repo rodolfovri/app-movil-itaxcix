@@ -12,6 +12,9 @@ data class LoginResponseDTO(
         val token: String,
         val userId: Int,
         val documentValue: String,
+        val firstName: String,
+        val lastName: String,
+        val availabilityStatus: Boolean? = null,
         val roles: List<String> = emptyList(),
         val permissions: List<String> = emptyList()
     )

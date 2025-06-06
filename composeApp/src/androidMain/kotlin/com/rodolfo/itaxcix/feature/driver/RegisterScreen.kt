@@ -64,6 +64,7 @@ import com.rodolfo.itaxcix.R
 import com.rodolfo.itaxcix.feature.driver.viewModel.RegisterDriverViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
+import kotlinx.coroutines.delay
 
 @Preview
 @Composable
@@ -76,7 +77,7 @@ fun RegisterDriverScreenPreview() {
 fun RegisterDriverScreen(
     viewModel: RegisterDriverViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {},
-    onRegisterSuccess: () -> Unit = {},
+    onRegisterSuccess: (userId: Int) -> Unit = {},
     onLoginClick: () -> Unit = {}
 ) {
 
@@ -85,7 +86,6 @@ fun RegisterDriverScreen(
     val focusManager = LocalFocusManager.current
     val isLoading = registerState is RegisterDriverViewModel.RegisterState.Loading
     val isSuccess = registerState is RegisterDriverViewModel.RegisterState.Success
-    val alias by viewModel.alias.collectAsState()
     val password by viewModel.password.collectAsState()
     val contact by viewModel.contact.collectAsState()
 
@@ -99,7 +99,6 @@ fun RegisterDriverScreen(
     }
 
     // Recolectar estados de error
-    val aliasError by viewModel.aliasError.collectAsState()
     val passwordError by viewModel.passwordError.collectAsState()
     val contactError by viewModel.contactError.collectAsState()
 
@@ -121,7 +120,8 @@ fun RegisterDriverScreen(
             }
             is RegisterDriverViewModel.RegisterState.Success -> {
                 isSuccessSnackbar = true
-                onRegisterSuccess()
+                delay(2000)
+                onRegisterSuccess(state.user.userId)
                 viewModel.onSuccessShown()
             }
             else -> {}
@@ -213,27 +213,6 @@ fun RegisterDriverScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 30.dp),
-                        )
-
-                        OutlinedTextField(
-                            value = alias,
-                            onValueChange = { viewModel.updateAlias(it) },
-                            label = { Text(text = "Ingresa tu alias") },
-                            isError = aliasError != null,
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ITaxCixPaletaColors.Blue1,
-                                unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
-                                cursorColor = ITaxCixPaletaColors.Blue1,
-                                focusedLabelColor = ITaxCixPaletaColors.Blue1,
-                                selectionColors = TextSelectionColors(
-                                    handleColor = ITaxCixPaletaColors.Blue1,
-                                    backgroundColor = ITaxCixPaletaColors.Blue3
-                                )
-                            )
                         )
 
                         OutlinedTextField(

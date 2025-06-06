@@ -24,18 +24,18 @@ class RegisterViewModel @Inject constructor(
     // Datos del formulario
     private val _documentTypeId = MutableStateFlow(0)
     private val _document = MutableStateFlow("")
-    private val _alias = MutableStateFlow("")
     private val _password = MutableStateFlow("")
     private val _contactTypeId = MutableStateFlow(1)
     private val _contact = MutableStateFlow("")
+    private val _personId = MutableStateFlow(0)
 
     // Exponer los estados como StateFlow
     val documentTypeId: StateFlow<Int> = _documentTypeId
     val document: StateFlow<String> = _document
-    val alias: StateFlow<String> = _alias
     val password: StateFlow<String> = _password
     val contactTypeId: StateFlow<Int> = _contactTypeId
     val contact: StateFlow<String> = _contact
+    val personId: StateFlow<Int> = _personId
 
     // Estados para validación de campos
     private val _aliasError = MutableStateFlow<String?>(null)
@@ -58,11 +58,6 @@ class RegisterViewModel @Inject constructor(
         resetStateIfError()
     }
 
-    fun updateAlias(value: String) {
-        _alias.value = value
-        resetStateIfError()
-    }
-
     fun updatePassword(value: String) {
         _password.value = value
         resetStateIfError()
@@ -78,6 +73,11 @@ class RegisterViewModel @Inject constructor(
         resetStateIfError()
     }
 
+    fun updatePersonId(value: Int) {
+        _personId.value = value
+        resetStateIfError()
+    }
+
     // Método para resetear el estado si hay un error activo
     private fun resetStateIfError() {
         if (_registerState.value is RegisterState.Error) {
@@ -89,26 +89,6 @@ class RegisterViewModel @Inject constructor(
     private fun validateFields(): Pair<Boolean, String?> {
         val errorMessages = mutableListOf<String>()
         var isValid = true
-
-        if (_alias.value.isBlank()) {
-            _aliasError.value = "Alias no puede estar vacío"
-            errorMessages.add("• Alias no puede estar vacío")
-            isValid = false
-        } else if (_alias.value.contains(" ")) {
-            _aliasError.value = "El alias no puede contener espacios"
-            errorMessages.add("• El alias no puede contener espacios")
-            isValid = false
-        } else if (_alias.value.length < 3) {
-            _aliasError.value = "El alias debe tener al menos 3 caracteres"
-            errorMessages.add("• El alias debe tener al menos 3 caracteres")
-            isValid = false
-        } else if (_alias.value.length > 20) {
-            _aliasError.value = "El alias no puede tener más de 20 caracteres"
-            errorMessages.add("• El alias no puede tener más de 20 caracteres")
-            isValid = false
-        } else {
-            _aliasError.value = null
-        }
 
         if (_password.value.isBlank()) {
             _passwordError.value = "La contraseña no puede estar vacía"
@@ -186,12 +166,10 @@ class RegisterViewModel @Inject constructor(
                 }
 
                 val request = CitizenRegisterRequestDTO(
-                    documentTypeId = _documentTypeId.value,
-                    document = _document.value,
-                    alias = _alias.value,
                     password = _password.value,
                     contactTypeId = _contactTypeId.value,
-                    contact = contactValue
+                    contactValue = contactValue,
+                    personId = _personId.value,
                 )
 
                 val user = userRepository.registerCitizen(request)
@@ -221,6 +199,5 @@ class RegisterViewModel @Inject constructor(
         object Loading : RegisterState()
         data class Success(val user: RegisterResult) : RegisterState()
         data class Error(val message: String) : RegisterState()
-        data class ValidationError(val message: String) : RegisterState()
     }
 }

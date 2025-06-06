@@ -37,7 +37,7 @@ fun CitizenHomeScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = "Bienvenido, ${userData?.nickname ?: "Ciudadano"}",
+            text = "Bienvenido, ${userData?.firstName ?: "Ciudadano"}",
             color = Color.Black,
             fontSize = 24.sp,
             modifier = Modifier.padding(16.dp)

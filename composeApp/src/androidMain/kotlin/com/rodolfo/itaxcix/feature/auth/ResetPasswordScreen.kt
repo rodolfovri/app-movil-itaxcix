@@ -48,12 +48,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.rodolfo.itaxcix.data.remote.api.AppModule
 import com.rodolfo.itaxcix.feature.auth.viewmodel.ResetPasswordViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
+import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
+import kotlinx.coroutines.delay
 
 @Preview
 @Composable
@@ -69,27 +67,25 @@ fun ResetPasswordScreen(
 
     val resetPasswordState by viewModel.resetPasswordState.collectAsState()
     val newPassword by viewModel.newPassword.collectAsState()
+    val repeatPassword by viewModel.repeatPassword.collectAsState()
     val newPasswordError by viewModel.newPasswordError.collectAsState()
+    val repeatPasswordError by viewModel.repeatPasswordError.collectAsState()
 
     var isPassVisible by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
     var isSuccessSnackbar by remember { mutableStateOf(false) }
+
+    val isLoading = resetPasswordState is ResetPasswordViewModel.ResetPasswordState.Loading
+    val isRedirecting = resetPasswordState is ResetPasswordViewModel.ResetPasswordState.Success
 
     LaunchedEffect(key1 = resetPasswordState) {
         when (val state = resetPasswordState) {
-            is ResetPasswordViewModel.ResetPasswordState.Loading -> {
-                // Mostrar un indicador de carga si es necesario
-            }
             is ResetPasswordViewModel.ResetPasswordState.Success -> {
                 isSuccessSnackbar = true
-                snackbarHostState.showSnackbar(
-                    message = state.message,
-                    duration = SnackbarDuration.Short
-                )
-                viewModel.onSuccessShown()
+                delay(2000) // Agregar delay de 2 segundos
                 onResetSuccess()
+                viewModel.onSuccessShown()
             }
             is ResetPasswordViewModel.ResetPasswordState.Error -> {
                 isSuccessSnackbar = false
@@ -106,150 +102,181 @@ fun ResetPasswordScreen(
         }
     }
 
-    // Mostrar CircularProgressIndicator mientras carga
-    if (resetPasswordState is ResetPasswordViewModel.ResetPasswordState.Loading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(50.dp),
-                strokeWidth = 8.dp,
-                color = ITaxCixPaletaColors.Blue1
-            )
-        }
-    }
-
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState) { data ->
-                // Personalizar el Snackbar según el estado
-                Snackbar(
-                    modifier = Modifier.padding(16.dp),
-                    containerColor = if (isSuccessSnackbar) Color(0xFF4CAF50) else Color(0xFFD32F2F),
-                    contentColor = Color.White,
-                    dismissAction = {
-                        IconButton(onClick = { data.dismiss() }) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState) { data ->
+                    // Personalizar el Snackbar según el estado
+                    Snackbar(
+                        modifier = Modifier.padding(16.dp),
+                        containerColor = if (isSuccessSnackbar) Color(0xFF4CAF50) else Color(0xFFD32F2F),
+                        contentColor = Color.White,
+                        dismissAction = {
+                            IconButton(onClick = { data.dismiss() }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cerrar",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Cerrar",
-                                tint = Color.White
+                                imageVector = if (isSuccessSnackbar) Icons.Default.Check else Icons.Default.Error,
+                                contentDescription = if (isSuccessSnackbar) "Éxito" else "Error",
+                                tint = Color.White,
+                                modifier = Modifier.padding(end = 8.dp)
                             )
+                            Text(text = data.visuals.message)
                         }
                     }
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if (isSuccessSnackbar) Icons.Default.Check else Icons.Default.Error,
-                            contentDescription = if (isSuccessSnackbar) "Éxito" else "Error",
-                            tint = Color.White,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text(text = data.visuals.message)
-                    }
                 }
-            }
-        },
-        containerColor = Color.White
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(30.dp)
-        ) {
-            Column(
+            },
+            containerColor = Color.White
+        ) { padding ->
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxSize(), // Para que ocupe toda la altura disponible
-                verticalArrangement = Arrangement.SpaceBetween // Para distribuir los elementos verticalmente
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(30.dp)
             ) {
-                // Contenedor principal del formulario
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .fillMaxSize(), // Para que ocupe toda la altura disponible
+                    verticalArrangement = Arrangement.SpaceBetween // Para distribuir los elementos verticalmente
                 ) {
-                    Text(
-                        text = "Establece tu nueva contraseña",
+                    // Contenedor principal del formulario
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = "Elige una contraseña segura para acceder nuevamente a tu cuenta.",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 30.dp),
-                    )
-
-                    OutlinedTextField(
-                        value = newPassword,
-                        onValueChange = { viewModel.updateNewPassword(it)  },
-                        label = { Text(text = "Ingresa tu nueva contraseña") },
-                        isError = newPasswordError != null,
-                        visualTransformation = if (isPassVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { isPassVisible = !isPassVisible }) {
-                                Icon(
-                                    imageVector = if (isPassVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                                    contentDescription = if (isPassVisible) "Ocultar contraseña" else "Mostrar contraseña",
-                                    tint = ITaxCixPaletaColors.Blue1
-                                )
-                            }
-                        },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 10.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ITaxCixPaletaColors.Blue1,
-                            unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
-                            cursorColor = ITaxCixPaletaColors.Blue1,
-                            focusedLabelColor = ITaxCixPaletaColors.Blue1,
-                            selectionColors = TextSelectionColors(
-                                handleColor = ITaxCixPaletaColors.Blue1,
-                                backgroundColor = ITaxCixPaletaColors.Blue3
-                            )
-                        )
-                    )
-
-                    Button(
-                        onClick = { viewModel.resetPassword()  },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp),
-                        shape = RectangleShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ITaxCixPaletaColors.Blue1,
-                            contentColor = Color.White
-                        )
                     ) {
                         Text(
-                            text = "Actualizar contraseña",
-                            style = MaterialTheme.typography.labelLarge,
-                            textAlign = TextAlign.Center,
+                            text = "Establece tu nueva contraseña",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp)
+                                .padding(bottom = 8.dp),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
                         )
+
+                        Text(
+                            text = "Elige una contraseña segura para acceder nuevamente a tu cuenta.",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 30.dp),
+                        )
+
+                        OutlinedTextField(
+                            value = newPassword,
+                            onValueChange = { viewModel.updateNewPassword(it)  },
+                            label = { Text(text = "Ingresa tu nueva contraseña") },
+                            isError = newPasswordError != null,
+                            visualTransformation = if (isPassVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { isPassVisible = !isPassVisible }) {
+                                    Icon(
+                                        imageVector = if (isPassVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                        contentDescription = if (isPassVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                                        tint = ITaxCixPaletaColors.Blue1
+                                    )
+                                }
+                            },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ITaxCixPaletaColors.Blue1,
+                                unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
+                                cursorColor = ITaxCixPaletaColors.Blue1,
+                                focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                                selectionColors = TextSelectionColors(
+                                    handleColor = ITaxCixPaletaColors.Blue1,
+                                    backgroundColor = ITaxCixPaletaColors.Blue3
+                                )
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = repeatPassword,
+                            onValueChange = { viewModel.updateRepeatPassword(it)  },
+                            label = { Text(text = "Ingresa tu nueva contraseña") },
+                            isError = repeatPasswordError != null,
+                            visualTransformation = if (isPassVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { isPassVisible = !isPassVisible }) {
+                                    Icon(
+                                        imageVector = if (isPassVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                        contentDescription = if (isPassVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                                        tint = ITaxCixPaletaColors.Blue1
+                                    )
+                                }
+                            },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ITaxCixPaletaColors.Blue1,
+                                unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
+                                cursorColor = ITaxCixPaletaColors.Blue1,
+                                focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                                selectionColors = TextSelectionColors(
+                                    handleColor = ITaxCixPaletaColors.Blue1,
+                                    backgroundColor = ITaxCixPaletaColors.Blue3
+                                )
+                            )
+                        )
+
+                        Button(
+                            onClick = { viewModel.resetPassword()  },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            shape = RectangleShape,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ITaxCixPaletaColors.Blue1,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                text = "Actualizar contraseña",
+                                style = MaterialTheme.typography.labelLarge,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            )
+                        }
+
                     }
-
                 }
-            }
 
-            Text(
-                text = "Tu nueva contraseña protegerá el acceso a tu cuenta.",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 20.dp)
-                    .align(Alignment.BottomCenter),
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center
-            )
+                Text(
+                    text = "Tu nueva contraseña protegerá el acceso a tu cuenta.",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp)
+                        .align(Alignment.BottomCenter),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
+
+        // Agregar el componente de progreso
+        ITaxCixProgressRequest(
+            isVisible = isLoading || isRedirecting,
+            isSuccess = isRedirecting,
+            loadingTitle = "Actualizando",
+            successTitle = "Contraseña actualizada",
+            loadingMessage = "Guardando tu nueva contraseña...",
+            successMessage = "Redirigiendo a la pantalla de inicio..."
+        )
     }
+
+
+
 }

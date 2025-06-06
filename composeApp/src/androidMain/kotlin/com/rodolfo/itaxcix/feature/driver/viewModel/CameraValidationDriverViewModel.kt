@@ -1,4 +1,4 @@
-package com.rodolfo.itaxcix.feature.auth.viewmodel
+package com.rodolfo.itaxcix.feature.driver.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,9 +17,9 @@ import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
-class CameraValidationViewModel @Inject constructor(
+class CameraValidationDriverViewModel @Inject constructor(
     private val userRepository: UserRepository
-) : ViewModel() {
+): ViewModel() {
 
     // Estado de validación
     private val _validationState = MutableStateFlow<ValidationState>(ValidationState.Waiting)
@@ -36,17 +36,32 @@ class CameraValidationViewModel @Inject constructor(
     private val _document = MutableStateFlow("")
     val document: StateFlow<String> = _document.asStateFlow()
 
+    private val _plate = MutableStateFlow("")
+    val plate: StateFlow<String> = _plate.asStateFlow()
+
     // ID de persona recibido de la validación de documento
     private val _personId = MutableStateFlow<Int?>(null)
     val personId: StateFlow<Int?> = _personId.asStateFlow()
+
+    // ID vehículo recibido de la validación de placa
+    private val _vehicleId = MutableStateFlow<Int?>(null)
+    val vehicleId: StateFlow<Int?> = _vehicleId.asStateFlow()
 
     // Contador de frames con detección correcta
     private var successfulFrames = 0
     private val requiredFrames = 30 // Frames necesarios para validación completa
 
+    fun setVehicleId(vehicleId: Int?) {
+        _vehicleId.value = vehicleId
+    }
+
     // Establecer datos del documento
     fun setDocumentData(personId: Int?) {
         _personId.value = personId
+    }
+
+    fun setPlate(plate: String) {
+        _plate.value = plate
     }
 
     // Método llamado cuando se detecta un rostro

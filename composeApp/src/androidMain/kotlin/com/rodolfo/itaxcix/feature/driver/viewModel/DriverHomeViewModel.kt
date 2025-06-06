@@ -31,38 +31,20 @@ class DriverHomeViewModel @Inject constructor(
     private val _driverHomeState = MutableStateFlow<DriverHomeUiState>(DriverHomeUiState.Initial)
     val driverHomeState: StateFlow<DriverHomeUiState> = _driverHomeState.asStateFlow()
 
-    fun driverActivateAvailability() {
+    fun toggleDriverAvailability() {
         _driverHomeState.value = DriverHomeUiState.Loading
 
         viewModelScope.launch {
             try {
-                val request = userData.value?.id ?: 0
-                val driverStatus = driverRepository.driverActivateAvailability(request)
+                val userId = userData.value?.id ?: 0
+                val driverStatus = driverRepository.toggleDriverAvailability(userId)
 
                 userData.value?.let {
                     preferencesManager.saveUserData(
-                        it.copy(isDriverAvailable = true, lastDriverStatusUpdate = System.currentTimeMillis().toString())
-                    )
-                }
-
-                _driverHomeState.value = DriverHomeUiState.Success(driverStatus)
-            } catch (e: Exception) {
-                _driverHomeState.value = DriverHomeUiState.Error(e.message ?: "Error")
-            }
-        }
-    }
-
-    fun driverDeactivateAvailability() {
-        _driverHomeState.value = DriverHomeUiState.Loading
-
-        viewModelScope.launch {
-            try {
-                val request = userData.value?.id ?: 0
-                val driverStatus = driverRepository.driverDeactivateAvailability(request)
-
-                userData.value?.let {
-                    preferencesManager.saveUserData(
-                        it.copy(isDriverAvailable = false, lastDriverStatusUpdate = System.currentTimeMillis().toString())
+                        it.copy(
+                            isDriverAvailable = driverStatus.available,
+                            lastDriverStatusUpdate = System.currentTimeMillis().toString()
+                        )
                     )
                 }
 

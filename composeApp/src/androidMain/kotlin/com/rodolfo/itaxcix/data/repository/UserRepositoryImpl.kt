@@ -7,16 +7,22 @@ import com.rodolfo.itaxcix.data.remote.dto.UserDTO
 import com.rodolfo.itaxcix.data.remote.api.ApiService
 import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.DriverRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterRequestDTO
 import com.rodolfo.itaxcix.domain.model.LoginResult
 import com.rodolfo.itaxcix.domain.model.RecoveryResult
 import com.rodolfo.itaxcix.domain.model.RegisterDriverResult
 import com.rodolfo.itaxcix.domain.model.RegisterResult
+import com.rodolfo.itaxcix.domain.model.ResendCodeRegisterResult
 import com.rodolfo.itaxcix.domain.model.ResetPasswordResult
 import com.rodolfo.itaxcix.domain.model.User
 import com.rodolfo.itaxcix.domain.model.ValidateBiometricResult
 import com.rodolfo.itaxcix.domain.model.ValidateDocumentResult
+import com.rodolfo.itaxcix.domain.model.ValidateVehicleResult
+import com.rodolfo.itaxcix.domain.model.VerifyCodeRegisterResult
 import com.rodolfo.itaxcix.domain.model.VerifyCodeResult
 import com.rodolfo.itaxcix.domain.repository.DriverRepository
 import com.rodolfo.itaxcix.domain.repository.UserRepository
@@ -42,6 +48,15 @@ class UserRepositoryImpl(
         )
     }
 
+    override suspend fun validateVehicle(vehicle: ValidateVehicleRequestDTO): ValidateVehicleResult {
+        val response = apiService.validateVehicle(vehicle)
+        return ValidateVehicleResult(
+            message = response.message,
+            personId = response.data.personId,
+            vehicleId = response.data.vehicleId
+        )
+    }
+
     override suspend fun validateBiometric(biometric: ValidateBiometricRequestDTO) : ValidateBiometricResult {
         val response = apiService.validateBiometric(biometric)
         return ValidateBiometricResult(
@@ -54,8 +69,7 @@ class UserRepositoryImpl(
         val response = apiService.registerCitizen(user)
         return RegisterResult(
             message = response.message,
-            userId = response.userId,
-            personId = response.personId
+            userId = response.data.userId,
         )
     }
 
@@ -69,16 +83,33 @@ class UserRepositoryImpl(
         )
     }
 
+    override suspend fun verifyCodeRegister(verifyCode: VerifyCodeRegisterRequestDTO): VerifyCodeRegisterResult {
+        val response = apiService.verifyCodeRegister(verifyCode)
+        return VerifyCodeRegisterResult(
+            message = response.message
+        )
+    }
+
+    override suspend fun resendCodeRegister(resendCode: ResendCodeRegisterRequestDTO): ResendCodeRegisterResult {
+        val response = apiService.resendCodeRegister(resendCode)
+        return ResendCodeRegisterResult(
+            message = response.message
+        )
+    }
+
     override suspend fun login(documentValue: String, password: String): LoginResult {
         val response = apiService.login(documentValue, password)
 
         val token = response.data.token
         val userId = response.data.userId.toString()
         val document = response.data.documentValue
+        val firstName = response.data.firstName
+        val lastName = response.data.lastName
+        val availabilityStatus = response.data.availabilityStatus ?: false
         val roles = response.data.roles
         val permissions = response.data.permissions
 
-        var user = User(
+        val user = User(
             id = userId,
             nickname = "",
             document = document,
@@ -95,7 +126,8 @@ class UserRepositoryImpl(
         preferencesManager.saveUserData(
             UserData(
                 id = userId.toInt(),
-                name = "",
+                firstName = firstName,
+                lastName = lastName,
                 nickname = "",
                 document = document,
                 email = "",
@@ -105,40 +137,12 @@ class UserRepositoryImpl(
                 country = "",
                 roles = roles,
                 permissions = permissions,
-                status = "UNAVAILABLE",
-                isDriverAvailable = false,
+                status = "",
+                isDriverAvailable = availabilityStatus,
                 lastDriverStatusUpdate = null,
                 authToken = token
             )
         )
-
-        // Obtener el estado del conductor si el usuario tiene el rol de conductor
-        if (roles.contains("Conductor")) {
-            try {
-                val driverStatus = driverRepository.getDriverStatus(userId.toInt())
-
-                // Actualizar el usuario con el estado del conductor
-                user = user.copy(
-                    isDriverAvailable = driverStatus.isDriverAvailable,
-                    lastDriverStatusUpdate = driverStatus.lastDriverStatusUpdate
-                )
-
-                // También actualizar UserData en las preferencias
-                val currentUserData = preferencesManager.userData.value
-                currentUserData?.let {
-                    preferencesManager.saveUserData(
-                        it.copy(
-                            isDriverAvailable = driverStatus.isDriverAvailable,
-                            lastDriverStatusUpdate = driverStatus.lastDriverStatusUpdate
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                // Manejar el error pero continuar con el inicio de sesión
-                Log.e("UserRepositoryImpl", "Error al obtener estado del conductor: ${e.message}")
-            }
-        }
-
 
         return LoginResult(message =  response.message, user = user)
     }
@@ -146,20 +150,21 @@ class UserRepositoryImpl(
     override suspend fun recovery(contactTypeId: Int, contact: String): RecoveryResult {
         val response = apiService.recovery(contactTypeId, contact)
         return RecoveryResult(
-            message = response.message
+            message = response.message,
+            userId = response.data.userId
         )
     }
 
-    override suspend fun verifyCode(code: String, contactTypeId: Int, contact: String): VerifyCodeResult {
-        val response = apiService.verifyCode(code, contactTypeId, contact)
+    override suspend fun verifyCode(userId: Int, code: String): VerifyCodeResult {
+        val response = apiService.verifyCode(userId, code)
         return VerifyCodeResult(
             message = response.message,
-            userId = response.userId,
+            token = response.data.token
         )
     }
 
-    override suspend fun resetPassword(userId: String, newPassword: String): ResetPasswordResult {
-        val response = apiService.resetPassword(userId, newPassword)
+    override suspend fun resetPassword(userId: Int, newPassword: String, repeatPassword: String, token: String): ResetPasswordResult {
+        val response = apiService.resetPassword(userId, newPassword, repeatPassword, token)
         return ResetPasswordResult(
             message = response.message
         )

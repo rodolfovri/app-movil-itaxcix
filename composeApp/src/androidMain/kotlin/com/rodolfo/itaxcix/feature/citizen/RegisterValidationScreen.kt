@@ -207,14 +207,17 @@ fun RegisterValidationCitizenScreen(
 
                     OutlinedTextField(
                         value = document,
-                        onValueChange = { viewModel.updateDocument(it) },
+                        onValueChange = { newValue ->
+                            val filteredValue = newValue.filter { it.isDigit() }
+                            viewModel.updateDocument(filteredValue)
+                        },
                         label = { Text(text = "Ingresa tu número de documento") },
                         isError = documentError != null,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 30.dp),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), // <-- Esto es clave
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), // <-- Esto es clave
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = ITaxCixPaletaColors.Blue1,
                             unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
@@ -240,7 +243,7 @@ fun RegisterValidationCitizenScreen(
                     )
                 ) {
                     Text(
-                        text = "Ingresar",
+                        text = "Continuar",
                         style = MaterialTheme.typography.labelLarge,
                         textAlign = TextAlign.Center,
                         modifier = Modifier
@@ -259,7 +262,5 @@ fun RegisterValidationCitizenScreen(
             loadingMessage = "Por favor espera mientras verificamos tu DNI...",
             successMessage = "Preparando para validación facial..."
         )
-
     }
-
 }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
@@ -42,7 +43,7 @@ val citizenDrawerItems = listOf(
     CitizenDrawerItem("Inicio", Icons.Default.Home, CitizenRoutes.HOME, "INICIO CIUDADANO"),
     CitizenDrawerItem("Perfil", Icons.Default.Person, CitizenRoutes.PROFILE, "PERFIL CIUDADANO"),
     CitizenDrawerItem("Historial", Icons.Default.History, CitizenRoutes.HISTORY, "HISTORIAL CIUDADANO"),
-    CitizenDrawerItem("Cerrar sesión", Icons.Default.ExitToApp, "logout") // Sin permiso requerido
+    CitizenDrawerItem("Cerrar sesión", Icons.AutoMirrored.Filled.ExitToApp, "logout") // Sin permiso requerido
 )
 
 @Composable

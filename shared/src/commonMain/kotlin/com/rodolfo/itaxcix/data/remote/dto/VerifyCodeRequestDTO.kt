@@ -4,7 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class VerifyCodeRequestDTO (
-    val code: String,
-    val contactTypeId: Int,
-    val contact: String,
+    val userId: Int,
+    val code: String
 )

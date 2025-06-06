@@ -100,7 +100,7 @@ fun DriverHomeScreen(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "Bienvenido, ${userData?.nickname ?: "Conductor"}",
+                        text = "Bienvenido, ${userData?.firstName ?: "Conductor"}",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = ITaxCixPaletaColors.Blue1
@@ -131,11 +131,7 @@ fun DriverHomeScreen(
                 // Botón que cambia según el estado de disponibilidad guardado en preferencias
                 Button(
                     onClick = {
-                        if (userData?.isDriverAvailable == true) {
-                            pendingAction = { viewModel.driverDeactivateAvailability() }
-                        } else {
-                            pendingAction = { viewModel.driverActivateAvailability() }
-                        }
+                        pendingAction = { viewModel.toggleDriverAvailability() }
                         showConfirmDialog = true
                     },
                     modifier = Modifier
