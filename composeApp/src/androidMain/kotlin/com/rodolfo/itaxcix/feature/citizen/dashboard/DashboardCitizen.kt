@@ -1,5 +1,6 @@
 package com.rodolfo.itaxcix.feature.citizen.dashboard
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -81,6 +82,10 @@ fun DashboardCitizenScreen(
         CitizenRoutes.PROFILE -> "Perfil"
         CitizenRoutes.HISTORY -> "Historial"
         else -> "Panel del Ciudadano"
+    }
+
+    BackHandler {
+        showAuthDialog = true
     }
 
     LaunchedEffect(key1 = authState) {

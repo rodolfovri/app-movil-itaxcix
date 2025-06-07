@@ -42,8 +42,7 @@ class DriverHomeViewModel @Inject constructor(
                 userData.value?.let {
                     preferencesManager.saveUserData(
                         it.copy(
-                            isDriverAvailable = driverStatus.available,
-                            lastDriverStatusUpdate = System.currentTimeMillis().toString()
+                            isTucActive = driverStatus.hasActiveTuc
                         )
                     )
                 }

@@ -19,7 +19,7 @@ class DriverRepositoryImpl(private val apiService: ApiService) : DriverRepositor
         val response = apiService.toggleDriverAvailability(driverId)
         return DriverAvailabilityResult(
             message = response.message,
-            available = response.data.available
+            hasActiveTuc = response.data.hasActiveTuc
         )
     }
 }

@@ -1,6 +1,7 @@
 package com.rodolfo.itaxcix.feature.driver.dashboard
 
 import DriverDrawerContent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -79,13 +80,16 @@ fun DashboardDriverScreen(
         else -> "Panel del Conductor"
     }
 
+    BackHandler {
+        showAuthDialog = true
+    }
+
     LaunchedEffect(key1 = authState) {
         when(val state = authState) {
             is AuthViewModel.LogoutState.Loading -> {
                 isLoggingOut = true
             }
             is AuthViewModel.LogoutState.Success -> {
-                // Mantenemos el indicador visible brevemente antes de redirigir
                 delay(2000)
                 onLogout()
                 viewModel.onSuccessShown()

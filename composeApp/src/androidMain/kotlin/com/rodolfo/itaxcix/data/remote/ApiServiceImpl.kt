@@ -254,7 +254,7 @@ class ApiServiceImpl(
 
     override suspend fun toggleDriverAvailability(driverId: Int): ToggleDriverAvailabilityResponseDTO {
         return safeApiCall {
-            val response = client.patch("$baseUrl/drivers/$driverId/toggle-active") {
+            val response = client.get("$baseUrl/drivers/$driverId/has-active-tuc") {
                 addAuthToken()
                 contentType(ContentType.Application.Json)
             }

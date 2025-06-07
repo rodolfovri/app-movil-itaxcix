@@ -10,6 +10,6 @@ data class ToggleDriverAvailabilityResponseDTO (
     @Serializable
     data class ToggleDriverAvailabilityDataDTO(
         val driverId: Int,
-        val available: Boolean
+        val hasActiveTuc: Boolean
     )
 }

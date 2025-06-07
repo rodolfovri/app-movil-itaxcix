@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -73,7 +74,7 @@ fun CitizenDrawerContent(
                     color = ITaxCixPaletaColors.Blue1
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Divider(color = ITaxCixPaletaColors.Blue3, thickness = 1.dp)
+                HorizontalDivider(thickness = 1.dp, color = ITaxCixPaletaColors.Blue3)
             }
         }
 

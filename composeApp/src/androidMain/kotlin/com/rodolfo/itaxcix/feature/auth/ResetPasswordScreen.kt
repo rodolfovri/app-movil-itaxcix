@@ -202,7 +202,7 @@ fun ResetPasswordScreen(
                         OutlinedTextField(
                             value = repeatPassword,
                             onValueChange = { viewModel.updateRepeatPassword(it)  },
-                            label = { Text(text = "Ingresa tu nueva contraseña") },
+                            label = { Text(text = "Repite tu nueva contraseña") },
                             isError = repeatPasswordError != null,
                             visualTransformation = if (isPassVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             trailingIcon = {

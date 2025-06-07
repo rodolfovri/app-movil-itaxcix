@@ -128,6 +128,7 @@ class UserRepositoryImpl(
                 id = userId.toInt(),
                 firstName = firstName,
                 lastName = lastName,
+                fullName = "$firstName $lastName",
                 nickname = "",
                 document = document,
                 email = "",

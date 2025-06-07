@@ -1,6 +1,5 @@
 package com.rodolfo.itaxcix.feature.auth.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
@@ -60,6 +59,7 @@ class RegisterViewModel @Inject constructor(
 
     fun updatePassword(value: String) {
         _password.value = value
+        validatePassword()
         resetStateIfError()
     }
 
@@ -70,12 +70,49 @@ class RegisterViewModel @Inject constructor(
 
     fun updateContact(value: String) {
         _contact.value = value
+        validateContact()
         resetStateIfError()
     }
 
     fun updatePersonId(value: Int) {
         _personId.value = value
         resetStateIfError()
+    }
+
+    // Métodos de validación individual
+    private fun validatePassword() {
+        if (_password.value.isBlank()) {
+            _passwordError.value = "La contraseña no puede estar vacía"
+        } else if (_password.value.contains(" ")) {
+            _passwordError.value = "La contraseña no puede contener espacios"
+        } else if (_password.value.length < 8) {
+            _passwordError.value = "La contraseña debe tener al menos 8 caracteres"
+        } else if (!_password.value.contains(Regex("[A-Z]"))) {
+            _passwordError.value = "La contraseña debe contener al menos una letra mayúscula"
+        } else if (!_password.value.contains(Regex("[a-z]"))) {
+            _passwordError.value = "La contraseña debe contener al menos una letra minúscula"
+        } else if (!_password.value.contains(Regex("[0-9]"))) {
+            _passwordError.value = "La contraseña debe contener al menos un número"
+        } else if (!_password.value.contains(Regex("[^A-Za-z0-9]"))) {
+            _passwordError.value = "La contraseña debe contener al menos un carácter especial"
+        } else {
+            _passwordError.value = null
+        }
+    }
+
+    private fun validateContact() {
+        if (_contact.value.isBlank()) {
+            _contactError.value = "El contacto no puede estar vacío"
+        } else if (_contact.value.contains(" ")) {
+            _contactError.value = "El contacto no puede contener espacios"
+        } else if (_contactTypeId.value == 1 &&
+            !_contact.value.matches(Regex("^[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$"))) {
+            _contactError.value = "El contacto debe ser un correo electrónico válido"
+        } else if (_contactTypeId.value == 2 && !_contact.value.matches(Regex("^[0-9]{9}$"))) {
+            _contactError.value = "El contacto debe ser un número de teléfono válido"
+        } else {
+            _contactError.value = null
+        }
     }
 
     // Método para resetear el estado si hay un error activo

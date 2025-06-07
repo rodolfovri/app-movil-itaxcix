@@ -230,7 +230,7 @@ fun RegisterCitizenScreen(
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 10.dp),
+                                .padding(bottom = 5.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = ITaxCixPaletaColors.Blue1,
                                 unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
@@ -242,6 +242,17 @@ fun RegisterCitizenScreen(
                                 )
                             )
                         )
+
+                        if (passwordError != null) {
+                            Text(
+                                text = passwordError ?: "",
+                                color = Color.Red,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp, start = 4.dp)
+                            )
+                        }
 
                         OutlinedTextField(
                             value = contact,
@@ -260,7 +271,8 @@ fun RegisterCitizenScreen(
                                 }
                             ),
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .padding(bottom = 5.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = ITaxCixPaletaColors.Blue1,
                                 unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
@@ -272,6 +284,17 @@ fun RegisterCitizenScreen(
                                 )
                             )
                         )
+
+                        if (contactError != null) {
+                            Text(
+                                text = contactError ?: "",
+                                color = Color.Red,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp, start = 4.dp)
+                            )
+                        }
 
                         Row(
                             modifier = Modifier

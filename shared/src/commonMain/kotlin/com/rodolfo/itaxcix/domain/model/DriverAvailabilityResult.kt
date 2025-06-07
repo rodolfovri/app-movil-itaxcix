@@ -2,5 +2,5 @@ package com.rodolfo.itaxcix.domain.model
 
 data class DriverAvailabilityResult (
     val message: String,
-    val available: Boolean
+    val hasActiveTuc: Boolean
 )

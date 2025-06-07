@@ -1,26 +1,34 @@
 package com.rodolfo.itaxcix.feature.driver.home
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rodolfo.itaxcix.feature.driver.viewModel.DriverHomeViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
-import com.rodolfo.itaxcix.ui.MyColors
 import com.rodolfo.itaxcix.ui.design.ITaxCixConfirmDialog
+import com.rodolfo.itaxcix.ui.design.ITaxCixPermissionDialog
+import kotlinx.coroutines.launch
 
 @Composable
 fun DriverHomeScreen(
@@ -30,12 +38,37 @@ fun DriverHomeScreen(
     val driverHomeState by viewModel.driverHomeState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var isSuccessSnackbar by remember { mutableStateOf(false) }
-
-    // Estado para controlar la acción pendiente
-    var pendingAction by remember { mutableStateOf({ }) }
-
-    // Estado para controlar la visibilidad del diálogo de confirmación
     var showConfirmDialog by remember { mutableStateOf(false) }
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    // Comprobación de permisos
+    val context = LocalContext.current
+    val hasLocationPermission = remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    // Solicitud de permisos
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasLocationPermission.value = isGranted
+        if (isGranted) {
+            showConfirmDialog = true
+        } else {
+            // Mostrar mensaje informando que no se puede usar la función sin permisos
+            isSuccessSnackbar = false
+            showPermissionDialog = false
+            scope.launch {
+                snackbarHostState.showSnackbar("Se requiere permiso de ubicación para verificar estado de TUC")
+            }
+        }
+    }
 
 
     LaunchedEffect(driverHomeState) {
@@ -108,11 +141,11 @@ fun DriverHomeScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Estado actual del conductor (usando el estado de las preferencias)
+                    // Estado de TUC activa
                     Text(
-                        text = "Estado actual: ${if (userData?.isDriverAvailable == true) "Disponible" else "No disponible"}",
+                        text = "Estado TUC: ${if (userData?.isTucActive == true) "Activa" else "No activa"}",
                         fontSize = 18.sp,
-                        color = if (userData?.isDriverAvailable == true)
+                        color = if (userData?.isTucActive == true)
                             ITaxCixPaletaColors.Blue1
                         else
                             Color.Gray
@@ -121,31 +154,39 @@ fun DriverHomeScreen(
                     // Última actualización (opcional)
                     userData?.lastDriverStatusUpdate?.let { lastUpdate ->
                         Text(
-                            text = "Última actualización: $lastUpdate",
+                            text = "Última verificación: $lastUpdate",
                             fontSize = 14.sp,
                             color = Color.Gray
                         )
                     }
+
+                    // Estado de permisos de ubicación
+                    Text(
+                        text = "Permiso de ubicación: ${if (hasLocationPermission.value) "Concedido" else "No concedido"}",
+                        fontSize = 14.sp,
+                        color = if (hasLocationPermission.value) Color.Green else Color.Red
+                    )
                 }
 
-                // Botón que cambia según el estado de disponibilidad guardado en preferencias
+                // Botón para consultar estado de TUC
                 Button(
                     onClick = {
-                        pendingAction = { viewModel.toggleDriverAvailability() }
-                        showConfirmDialog = true
+                        if (hasLocationPermission.value) {
+                            showConfirmDialog = true
+                        } else {
+                            showPermissionDialog = true
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),
                     shape = RectangleShape,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (userData?.isDriverAvailable == true)
-                            MyColors.LightRed else ITaxCixPaletaColors.Blue1,
+                        containerColor = ITaxCixPaletaColors.Blue1,
                     )
                 ) {
                     Text(
-                        text = if (userData?.isDriverAvailable == true)
-                            "Desactivar disponibilidad" else "Activar disponibilidad",
+                        text = "Verificar estado de TUC",
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(8.dp)
@@ -155,18 +196,31 @@ fun DriverHomeScreen(
         }
     }
 
-    // Diálogo de confirmación reutilizable
+    // En DriverHomeScreen.kt
+    ITaxCixPermissionDialog(
+        showDialog = showPermissionDialog,
+        onDismiss = { showPermissionDialog = false },
+        onConfirm = {
+            showPermissionDialog = false // Cerrar el diálogo inmediatamente
+            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        },
+        permissionTitle = "Permiso requerido",
+        permissionDescription = "Para verificar el estado de TUC, necesitamos acceder a tu ubicación.",
+        permissionReason = "Esto es necesario para confirmar tu posición actual al conectarte con el sistema.",
+        permissionIcon = Icons.Default.LocationOn,
+        confirmButtonText = "Permitir ubicación"
+    )       
+
+    // Diálogo de confirmación para verificar TUC
     ITaxCixConfirmDialog(
         showDialog = showConfirmDialog,
         onDismiss = { showConfirmDialog = false },
-        onConfirm = { pendingAction() },
-        title = if (userData?.isDriverAvailable == true)
-            "¿Desactivar disponibilidad?" else "¿Activar disponibilidad?",
-        message = if (userData?.isDriverAvailable == true)
-            "Ya no estarás disponible para recibir viajes."
-        else
-            "Estarás disponible para recibir solicitudes de viaje.",
+        onConfirm = {
+            viewModel.toggleDriverAvailability()
+            showConfirmDialog = false
+        },
+        title = "Verificar estado de TUC",
+        message = "¿Desea consultar si tiene una TUC activa en este momento?",
         confirmButtonColor = ITaxCixPaletaColors.Blue2
     )
-
 }

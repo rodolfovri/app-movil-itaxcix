@@ -29,6 +29,8 @@ class PreferencesManager @Inject constructor(
         val USER_ID = intPreferencesKey("user_id")
         val USER_FIRST_NAME = stringPreferencesKey("user_first_name")
         val USER_LAST_NAME = stringPreferencesKey("user_last_name")
+        val USER_FULL_NAME = stringPreferencesKey("user_full_name")
+        val USER_IS_TUC_ACTIVE = booleanPreferencesKey("user_is_tuc_active")
         val USER_NICKNAME = stringPreferencesKey("user_nickname")
         val USER_DOCUMENT = stringPreferencesKey("user_document")
         val USER_EMAIL = stringPreferencesKey("user_email")
@@ -55,6 +57,8 @@ class PreferencesManager @Inject constructor(
                 val userId = preferences[PreferencesKeys.USER_ID]
                 val userFirstName = preferences[PreferencesKeys.USER_FIRST_NAME]
                 val userLastName = preferences[PreferencesKeys.USER_LAST_NAME]
+                val userFullName = preferences[PreferencesKeys.USER_FULL_NAME] ?: ""
+                val userIsTucActive = preferences[PreferencesKeys.USER_IS_TUC_ACTIVE]
                 val nickname = preferences[PreferencesKeys.USER_NICKNAME]
                 val userDocument = preferences[PreferencesKeys.USER_DOCUMENT] ?: ""
                 val email = preferences[PreferencesKeys.USER_EMAIL] ?: ""
@@ -74,6 +78,8 @@ class PreferencesManager @Inject constructor(
                         id = userId,
                         firstName = userFirstName,
                         lastName = userLastName,
+                        fullName = userFullName,
+                        isTucActive = userIsTucActive,
                         nickname = nickname ?: "",
                         document = userDocument,
                         email = email,
@@ -99,6 +105,7 @@ class PreferencesManager @Inject constructor(
             preferences[PreferencesKeys.USER_ID] = userData.id
             preferences[PreferencesKeys.USER_FIRST_NAME] = userData.firstName
             preferences[PreferencesKeys.USER_LAST_NAME] = userData.lastName
+            preferences[PreferencesKeys.USER_FULL_NAME] = userData.fullName
             preferences[PreferencesKeys.USER_NICKNAME] = userData.nickname
             preferences[PreferencesKeys.USER_EMAIL] = userData.email
             preferences[PreferencesKeys.USER_PHONE] = userData.phone
@@ -108,6 +115,10 @@ class PreferencesManager @Inject constructor(
             preferences[PreferencesKeys.USER_ROLES] = userData.roles.joinToString(",")
             preferences[PreferencesKeys.USER_PERMISSIONS] = userData.permissions.joinToString(",")
             preferences[PreferencesKeys.USER_STATUS] = userData.status ?: ""
+
+            userData.isTucActive?.let {
+                preferences[PreferencesKeys.USER_IS_TUC_ACTIVE] = it
+            }
 
             userData.isDriverAvailable?.let {
                 preferences[PreferencesKeys.IS_DRIVER_AVAILABLE] = it
@@ -120,6 +131,8 @@ class PreferencesManager @Inject constructor(
             userData.authToken?.let {
                 preferences[PreferencesKeys.AUTH_TOKEN] = it
             }
+
+
         }
         _userData.value = userData
     }
@@ -137,6 +150,8 @@ data class UserData(
     val id: Int,
     val firstName: String,
     val lastName: String,
+    val fullName: String = "$firstName $lastName",
+    val isTucActive: Boolean? = null,
     val nickname: String,
     val document: String = "",
     val email: String = "",

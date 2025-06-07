@@ -209,13 +209,15 @@ fun RegisterValidationCitizenScreen(
                         value = document,
                         onValueChange = { newValue ->
                             val filteredValue = newValue.filter { it.isDigit() }
-                            viewModel.updateDocument(filteredValue)
+                            if (filteredValue.length <= 8) {
+                                viewModel.updateDocument(filteredValue)
+                            }
                         },
                         label = { Text(text = "Ingresa tu número de documento") },
                         isError = documentError != null,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 30.dp),
+                            .padding(bottom = 5.dp),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), // <-- Esto es clave
                         colors = OutlinedTextFieldDefaults.colors(
@@ -229,6 +231,17 @@ fun RegisterValidationCitizenScreen(
                             )
                         )
                     )
+
+                    if (documentError != null) {
+                        Text(
+                            text = documentError ?: "",
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp, start = 4.dp)
+                        )
+                    }
                 }
 
                 Button(

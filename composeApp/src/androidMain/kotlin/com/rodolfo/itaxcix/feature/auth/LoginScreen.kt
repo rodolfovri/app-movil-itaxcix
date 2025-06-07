@@ -206,8 +206,10 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = username,
                         onValueChange = { newValue ->
-                            val filteredValue = newValue.filter { it.isDigit() }
-                            viewModel.updateUsername(filteredValue)
+                            val filteredValue = newValue.filter { it.isDigit() } // Filtra solo números
+                            if (filteredValue.length <= 8) { // Limita a 10 dígitos
+                                viewModel.updateUsername(filteredValue)
+                            }
                         },
                         label = { Text(text = "Ingresa tu número de documento") },
                         isError = usernameError != null,
@@ -223,7 +225,6 @@ fun LoginScreen(
                             unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
                             cursorColor = ITaxCixPaletaColors.Blue1,
                             focusedLabelColor = ITaxCixPaletaColors.Blue1,
-                            // Añadimos colores para el estado deshabilitado iguales a los normales
                             disabledBorderColor = ITaxCixPaletaColors.Blue3,
                             disabledLabelColor = ITaxCixPaletaColors.Blue3,
                             disabledTextColor = MaterialTheme.colorScheme.onSurface,
