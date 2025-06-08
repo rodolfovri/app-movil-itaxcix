@@ -196,12 +196,12 @@ fun DriverHomeScreen(
         }
     }
 
-    // En DriverHomeScreen.kt
+    // Diálogo de permisos de ubicación
     ITaxCixPermissionDialog(
         showDialog = showPermissionDialog,
         onDismiss = { showPermissionDialog = false },
         onConfirm = {
-            showPermissionDialog = false // Cerrar el diálogo inmediatamente
+            showPermissionDialog = false
             permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         },
         permissionTitle = "Permiso requerido",
@@ -209,7 +209,7 @@ fun DriverHomeScreen(
         permissionReason = "Esto es necesario para confirmar tu posición actual al conectarte con el sistema.",
         permissionIcon = Icons.Default.LocationOn,
         confirmButtonText = "Permitir ubicación"
-    )       
+    )
 
     // Diálogo de confirmación para verificar TUC
     ITaxCixConfirmDialog(

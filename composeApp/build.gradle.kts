@@ -52,6 +52,7 @@ kotlin {
             implementation(libs.kotlin.coroutines.core)
             implementation(libs.hilt.android)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.ktor.client.websockets)
         }
     }
 

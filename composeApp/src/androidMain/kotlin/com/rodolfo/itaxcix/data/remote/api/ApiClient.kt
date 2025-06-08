@@ -9,7 +9,9 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.observer.ResponseObserver
+import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -41,6 +43,13 @@ object ApiClient {
                     isLenient = true
                     prettyPrint = true
                 })
+            }
+
+            install(WebSockets) {
+                // Configuración de WebSockets si es necesario
+                pingInterval = 15_000 // Intervalo de ping para mantener la conexión viva
+                maxFrameSize = Long.MAX_VALUE // Tamaño máximo del frame
+                contentConverter = KotlinxWebsocketSerializationConverter(Json)
             }
 
             install(Logging) {

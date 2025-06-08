@@ -12,12 +12,14 @@ import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.domain.model.GetProfilePhotoResult
 import com.rodolfo.itaxcix.domain.model.LoginResult
 import com.rodolfo.itaxcix.domain.model.RecoveryResult
 import com.rodolfo.itaxcix.domain.model.RegisterDriverResult
 import com.rodolfo.itaxcix.domain.model.RegisterResult
 import com.rodolfo.itaxcix.domain.model.ResendCodeRegisterResult
 import com.rodolfo.itaxcix.domain.model.ResetPasswordResult
+import com.rodolfo.itaxcix.domain.model.UploadProfilePhotoResult
 import com.rodolfo.itaxcix.domain.model.User
 import com.rodolfo.itaxcix.domain.model.ValidateBiometricResult
 import com.rodolfo.itaxcix.domain.model.ValidateDocumentResult
@@ -108,6 +110,7 @@ class UserRepositoryImpl(
         val availabilityStatus = response.data.availabilityStatus ?: false
         val roles = response.data.roles
         val permissions = response.data.permissions
+        val rating = response.data.rating
 
         val user = User(
             id = userId,
@@ -129,6 +132,8 @@ class UserRepositoryImpl(
                 firstName = firstName,
                 lastName = lastName,
                 fullName = "$firstName $lastName",
+                isTucActive = null, // No se maneja en este contexto
+                rating = rating,
                 nickname = "",
                 document = document,
                 email = "",
@@ -144,6 +149,8 @@ class UserRepositoryImpl(
                 authToken = token
             )
         )
+
+        Log.d("Token", "Token: $token")
 
         return LoginResult(message =  response.message, user = user)
     }
@@ -170,6 +177,23 @@ class UserRepositoryImpl(
             message = response.message
         )
     }
+
+    override suspend fun getProfilePhoto(userId: Int): GetProfilePhotoResult {
+        val response = apiService.getProfilePhoto(userId)
+        Log.d("UserRepositoryImpl", "getProfilePhoto response: $response")
+        return GetProfilePhotoResult(
+            message = response.message,
+            base64Image = response.data.base64Image
+        )
+    }
+
+    override suspend fun uploadProfilePhoto(userId: Int, base64Image: String): UploadProfilePhotoResult {
+        val response = apiService.uploadProfilePhoto(userId, base64Image)
+        return UploadProfilePhotoResult(
+            message = response.message
+        )
+    }
+
 
     // Funciones de extensión para mapeo
     private fun UserDTO.toDomain(): User {

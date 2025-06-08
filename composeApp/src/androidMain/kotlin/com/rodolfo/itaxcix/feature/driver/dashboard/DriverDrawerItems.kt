@@ -20,20 +20,23 @@ import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 data class DrawerItem(
     val label: String,
     val icon: ImageVector,
-    val route: String
+    val route: String,
+    val requiredPermission: String? = null
 )
 
 val driverDrawerItems = listOf(
-    DrawerItem("Inicio", Icons.Default.Home, "driverHome"),
-    DrawerItem("Perfil", Icons.Default.Person, "driverProfile"),
-    DrawerItem("Historial", Icons.Default.History, "driverHistory"),
+    DrawerItem("Inicio", Icons.Default.Home, "driverHome", "INICIO CONDUCTOR"),
+    DrawerItem("Perfil", Icons.Default.Person, "driverProfile", "PERFIL CONDUCTOR"),
+    DrawerItem("Historial", Icons.Default.History, "driverHistory", "HISTORIAL CONDUCTOR"),
     DrawerItem("Cerrar sesión", Icons.AutoMirrored.Filled.ExitToApp, "logout")
 )
 
 @Composable
 fun DriverDrawerContent(
     currentRoute: String,
-    onItemClick: (String) -> Unit) {
+    onItemClick: (String) -> Unit,
+    userPermissions: List<String> = emptyList() // Lista de permisos del usuario
+) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -55,20 +58,24 @@ fun DriverDrawerContent(
                     color = ITaxCixPaletaColors.Blue1
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Divider(color = ITaxCixPaletaColors.Blue3, thickness = 1.dp)
+                HorizontalDivider(thickness = 1.dp, color = ITaxCixPaletaColors.Blue3)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Items del drawer
-        for (item in driverDrawerItems) {
+        val visibleItems = driverDrawerItems.filter { item ->
+            item.requiredPermission == null || userPermissions.contains(item.requiredPermission)
+        }
+
+        // Mostrar los elementos del drawer
+        for (item in visibleItems) {
             DrawerItemRow(
                 item = item,
                 isSelected = currentRoute == item.route,
                 onItemClick = onItemClick
             )
-            if (item != driverDrawerItems.last()) {
+            if (item != visibleItems.last()) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }

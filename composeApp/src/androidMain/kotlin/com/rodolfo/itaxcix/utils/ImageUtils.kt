@@ -1,8 +1,12 @@
 package com.rodolfo.itaxcix.utils
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.Base64
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okio.IOException
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -66,5 +70,73 @@ object ImageUtils {
     fun File.compressToBase64DataUrl(maxDimension: Int = 500, quality: Int = 70): String {
         val base64 = compressAndConvertToBase64(maxDimension, quality)
         return "data:image/jpeg;base64,$base64"
+    }
+
+    // ✅ NUEVA FUNCIÓN: Maneja URIs directamente
+    /**
+     * Convierte un URI de contenido a archivo temporal
+     * @param context Contexto de la aplicación
+     * @param uri URI del archivo seleccionado
+     * @return File temporal creado desde el URI
+     */
+    suspend fun createTempFileFromUri(context: Context, uri: Uri): File {
+        return withContext(Dispatchers.IO) {
+            val inputStream = context.contentResolver.openInputStream(uri)
+                ?: throw IllegalArgumentException("No se puede abrir el archivo seleccionado")
+
+            // Crear archivo temporal con extensión apropiada
+            val tempFile = File.createTempFile("temp_image", ".jpg", context.cacheDir)
+
+            inputStream.use { input ->
+                tempFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            tempFile
+        }
+    }
+
+    // ✅ FUNCIÓN DE CONVENIENCIA: URI directo a Base64
+    /**
+     * Convierte un URI directamente a Base64 comprimido
+     * @param context Contexto de la aplicación
+     * @param uri URI del archivo
+     * @param maxDimension Dimensión máxima en píxeles
+     * @param quality Calidad de compresión (0-100)
+     * @return String Base64
+     */
+    suspend fun uriToCompressedBase64(
+        context: Context,
+        uri: Uri,
+        maxDimension: Int = 500,
+        quality: Int = 70
+    ): String {
+        val tempFile = createTempFileFromUri(context, uri)
+        return try {
+            tempFile.compressAndConvertToBase64(maxDimension, quality)
+        } finally {
+            // Limpiar archivo temporal
+            tempFile.delete()
+        }
+    }
+
+    /**
+     * Decodifica una cadena Base64 a un objeto Bitmap
+     * @param base64Image Cadena en formato Base64 (puede incluir prefijo data:image)
+     * @return Bitmap decodificado o null si ocurre un error
+     */
+    fun decodeBase64ToBitmap(base64Image: String): Bitmap? {
+        return try {
+            val imageData = if (base64Image.contains("base64,")) {
+                base64Image.substringAfter("base64,")
+            } else {
+                base64Image
+            }
+            val imageBytes = Base64.decode(imageData, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        } catch (e: Exception) {
+            null
+        }
     }
 }

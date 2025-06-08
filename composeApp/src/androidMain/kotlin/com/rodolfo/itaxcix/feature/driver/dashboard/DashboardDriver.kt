@@ -73,6 +73,10 @@ fun DashboardDriverScreen(
     var showAuthDialog by remember { mutableStateOf(false) }
     var isLoggingOut by remember { mutableStateOf(false) }
 
+    val preferencesManager = viewModel.preferencesManager
+    val userData by preferencesManager.userData.collectAsState()
+    val userPermissions = userData?.permissions ?: emptyList()
+
     val title = when (currentRoute) {
         DriverRoutes.HOME -> "Inicio"
         DriverRoutes.PROFILE -> "Perfil"
@@ -108,17 +112,19 @@ fun DashboardDriverScreen(
             DriverDrawerContent(
                 currentRoute = currentRoute,
                 onItemClick = { route ->
-                coroutineScope.launch { drawerState.close() }
-                if (route == "logout") {
-                    showAuthDialog = true
-                } else {
-                    navController.navigate(route) {
-                        popUpTo(DriverRoutes.HOME) { saveState = true } // Guardar el estado
-                        launchSingleTop = true // Evitar múltiples instancias
-                        restoreState = true // Restaurar el estado de la navegación
+                    coroutineScope.launch { drawerState.close() }
+                    if (route == "logout") {
+                        showAuthDialog = true
+                    } else {
+                        navController.navigate(route) {
+                            popUpTo(DriverRoutes.HOME) { saveState = true } // Guardar el estado
+                            launchSingleTop = true // Evitar múltiples instancias
+                            restoreState = true // Restaurar el estado de la navegación
+                        }
                     }
-                }
-            })
+                },
+                userPermissions = userPermissions
+            )
         },
         scrimColor = Color.Black.copy(alpha = 0.3f)
     ) {

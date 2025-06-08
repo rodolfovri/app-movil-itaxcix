@@ -16,6 +16,7 @@ data class LoginResponseDTO(
         val lastName: String,
         val availabilityStatus: Boolean? = null,
         val roles: List<String> = emptyList(),
-        val permissions: List<String> = emptyList()
+        val permissions: List<String> = emptyList(),
+        val rating: Double
     )
 }

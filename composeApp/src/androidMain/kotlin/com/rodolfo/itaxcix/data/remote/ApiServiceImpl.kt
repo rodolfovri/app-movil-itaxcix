@@ -9,6 +9,7 @@ import com.rodolfo.itaxcix.data.remote.dto.DriverAvailabilityRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.DriverAvailabilityResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.DriverRegisterRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.DriverStatusResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.GetProfilePhotoResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.LoginResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.RecoveryRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.RecoveryResponseDTO
@@ -19,6 +20,7 @@ import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.ResetPasswordRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.ResetPasswordResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.ToggleDriverAvailabilityResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.UploadProfilePhotoResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
@@ -257,6 +259,39 @@ class ApiServiceImpl(
             val response = client.get("$baseUrl/drivers/$driverId/has-active-tuc") {
                 addAuthToken()
                 contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun getProfilePhoto(userId: Int): GetProfilePhotoResponseDTO {
+        return safeApiCall {
+            val response = client.get("$baseUrl/users/$userId/profile-photo") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun uploadProfilePhoto(userId: Int, base64Image: String): UploadProfilePhotoResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/users/$userId/profile-photo") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("base64Image" to base64Image))
             }
 
             if (response.status.value in 200..299) {

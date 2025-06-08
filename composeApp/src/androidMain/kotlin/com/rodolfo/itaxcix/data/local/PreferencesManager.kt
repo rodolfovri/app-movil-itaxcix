@@ -31,6 +31,7 @@ class PreferencesManager @Inject constructor(
         val USER_LAST_NAME = stringPreferencesKey("user_last_name")
         val USER_FULL_NAME = stringPreferencesKey("user_full_name")
         val USER_IS_TUC_ACTIVE = booleanPreferencesKey("user_is_tuc_active")
+        val USER_RATING = stringPreferencesKey("user_rating")
         val USER_NICKNAME = stringPreferencesKey("user_nickname")
         val USER_DOCUMENT = stringPreferencesKey("user_document")
         val USER_EMAIL = stringPreferencesKey("user_email")
@@ -44,6 +45,7 @@ class PreferencesManager @Inject constructor(
         val IS_DRIVER_AVAILABLE = booleanPreferencesKey("is_driver_available")
         val LAST_DRIVER_UPDATE = stringPreferencesKey("last_driver_update")
         val AUTH_TOKEN = stringPreferencesKey("auth_token")
+        val USER_PROFILE_IMAGE = stringPreferencesKey("user_profile_image")
     }
 
     // StateFlow observable para datos de usuario
@@ -59,6 +61,7 @@ class PreferencesManager @Inject constructor(
                 val userLastName = preferences[PreferencesKeys.USER_LAST_NAME]
                 val userFullName = preferences[PreferencesKeys.USER_FULL_NAME] ?: ""
                 val userIsTucActive = preferences[PreferencesKeys.USER_IS_TUC_ACTIVE]
+                val userRating = preferences[PreferencesKeys.USER_RATING]?.toDoubleOrNull() ?: 0.0
                 val nickname = preferences[PreferencesKeys.USER_NICKNAME]
                 val userDocument = preferences[PreferencesKeys.USER_DOCUMENT] ?: ""
                 val email = preferences[PreferencesKeys.USER_EMAIL] ?: ""
@@ -72,6 +75,7 @@ class PreferencesManager @Inject constructor(
                 val isDriverAvailable = preferences[PreferencesKeys.IS_DRIVER_AVAILABLE]
                 val lastDriverUpdate = preferences[PreferencesKeys.LAST_DRIVER_UPDATE]
                 val authToken = preferences[PreferencesKeys.AUTH_TOKEN]
+                val profileImage = preferences[PreferencesKeys.USER_PROFILE_IMAGE]
 
                 if (userId != null && userFirstName != null && userLastName != null) {
                     _userData.value = UserData(
@@ -80,6 +84,7 @@ class PreferencesManager @Inject constructor(
                         lastName = userLastName,
                         fullName = userFullName,
                         isTucActive = userIsTucActive,
+                        rating = userRating,
                         nickname = nickname ?: "",
                         document = userDocument,
                         email = email,
@@ -92,7 +97,9 @@ class PreferencesManager @Inject constructor(
                         status = userStatus,
                         isDriverAvailable = isDriverAvailable,
                         lastDriverStatusUpdate = lastDriverUpdate,
-                        authToken = authToken
+                        authToken = authToken,
+                        profileImage = profileImage
+
                     )
                 }
             }
@@ -132,6 +139,10 @@ class PreferencesManager @Inject constructor(
                 preferences[PreferencesKeys.AUTH_TOKEN] = it
             }
 
+            userData.profileImage?.let {
+                preferences[PreferencesKeys.USER_PROFILE_IMAGE] = it
+            }
+
 
         }
         _userData.value = userData
@@ -152,6 +163,7 @@ data class UserData(
     val lastName: String,
     val fullName: String = "$firstName $lastName",
     val isTucActive: Boolean? = null,
+    val rating: Double,
     val nickname: String,
     val document: String = "",
     val email: String = "",
@@ -164,5 +176,6 @@ data class UserData(
     val status: String? = null,
     val isDriverAvailable: Boolean? = null,
     val lastDriverStatusUpdate: String? = null,
-    val authToken: String? = null
+    val authToken: String? = null,
+    val profileImage: String? = null
 )
