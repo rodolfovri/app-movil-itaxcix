@@ -31,7 +31,6 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -47,7 +46,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -68,7 +66,7 @@ fun RegisterValidationDriverScreenPreview() {
     RegisterValidationDriverScreen(
         viewModel = viewModel<RegisterValidationViewModel>(),
         onBackClick = {},
-        onCameraClick = { personId, plate -> /* Acción de cámara */ }
+        onCameraClick = { _, _ -> }
     )
 }
 
@@ -80,18 +78,17 @@ fun RegisterValidationDriverScreen(
     onCameraClick: (personId: Int, vehicleId: Int) -> Unit,
 ) {
 
-    // Estados para la interfaz
+    val validationState by viewModel.validationState.collectAsState()
+    val isLoading = validationState is RegisterValidationViewModel.ValidationState.Loading
+    val isSuccess = validationState is RegisterValidationViewModel.ValidationState.Success
+
     val document by viewModel.document.collectAsState()
     val plate by viewModel.plate.collectAsState()
     val documentError by viewModel.documentError.collectAsState()
     val plateError by viewModel.plateError.collectAsState()
-    val validationState by viewModel.validationState.collectAsState()
 
     var isSuccessSnackbar by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-
-    val isLoading = validationState is RegisterValidationViewModel.ValidationState.Loading
-    val isSuccess = validationState is RegisterValidationViewModel.ValidationState.Success
 
     LaunchedEffect(validationState) {
         when (val state = validationState) {

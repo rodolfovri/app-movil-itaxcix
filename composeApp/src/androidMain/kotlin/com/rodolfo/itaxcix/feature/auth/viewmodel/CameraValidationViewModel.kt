@@ -3,7 +3,7 @@ package com.rodolfo.itaxcix.feature.auth.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.face.Face
-import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateBiometricRequestDTO
 import com.rodolfo.itaxcix.domain.model.ValidateBiometricResult
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 import com.rodolfo.itaxcix.services.camera.analyzers.FaceDetectionAnalyzer
@@ -162,10 +162,10 @@ class CameraValidationViewModel @Inject constructor(
 
     // Estados posibles durante la validación
     sealed class ValidationState {
-        object Waiting : ValidationState()
-        object Validating : ValidationState()
-        object Success : ValidationState()
-        object BiometricValidating : ValidationState()
+        data object Waiting : ValidationState()
+        data object Validating : ValidationState()
+        data object Success : ValidationState()
+        data object BiometricValidating : ValidationState()
         data class BiometricSuccess(val result: ValidateBiometricResult) : ValidationState()
         data class BiometricError(val message: String) : ValidationState()
     }

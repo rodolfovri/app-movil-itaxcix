@@ -1,9 +1,8 @@
 package com.rodolfo.itaxcix.feature.citizen.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateDocumentRequestDTO
 import com.rodolfo.itaxcix.domain.model.ValidateDocumentResult
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -101,8 +100,8 @@ class RegisterValidationViewModel @Inject constructor(
 
     // Estados para la pantalla
     sealed class ValidationState {
-        object Initial : ValidationState()
-        object Loading : ValidationState()
+        data object Initial : ValidationState()
+        data object Loading : ValidationState()
         data class Success(val document: ValidateDocumentResult) : ValidationState()
         data class Error(val message: String) : ValidationState()
     }

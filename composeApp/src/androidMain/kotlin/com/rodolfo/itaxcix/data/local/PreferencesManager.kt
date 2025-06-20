@@ -46,6 +46,8 @@ class PreferencesManager @Inject constructor(
         val LAST_DRIVER_UPDATE = stringPreferencesKey("last_driver_update")
         val AUTH_TOKEN = stringPreferencesKey("auth_token")
         val USER_PROFILE_IMAGE = stringPreferencesKey("user_profile_image")
+        val USER_LATITUDE = stringPreferencesKey("user_latitude")
+        val USER_LONGITUDE = stringPreferencesKey("user_longitude")
     }
 
     // StateFlow observable para datos de usuario
@@ -76,6 +78,8 @@ class PreferencesManager @Inject constructor(
                 val lastDriverUpdate = preferences[PreferencesKeys.LAST_DRIVER_UPDATE]
                 val authToken = preferences[PreferencesKeys.AUTH_TOKEN]
                 val profileImage = preferences[PreferencesKeys.USER_PROFILE_IMAGE]
+                val latitude = preferences[PreferencesKeys.USER_LATITUDE]?.toDoubleOrNull()
+                val longitude = preferences[PreferencesKeys.USER_LONGITUDE]?.toDoubleOrNull()
 
                 if (userId != null && userFirstName != null && userLastName != null) {
                     _userData.value = UserData(
@@ -98,7 +102,9 @@ class PreferencesManager @Inject constructor(
                         isDriverAvailable = isDriverAvailable,
                         lastDriverStatusUpdate = lastDriverUpdate,
                         authToken = authToken,
-                        profileImage = profileImage
+                        profileImage = profileImage,
+                        latitude = latitude,
+                        longitude = longitude
 
                     )
                 }
@@ -143,6 +149,14 @@ class PreferencesManager @Inject constructor(
                 preferences[PreferencesKeys.USER_PROFILE_IMAGE] = it
             }
 
+            userData.latitude?.let {
+                preferences[PreferencesKeys.USER_LATITUDE] = it.toString()
+            }
+
+            userData.longitude?.let {
+                preferences[PreferencesKeys.USER_LONGITUDE] = it.toString()
+            }
+
 
         }
         _userData.value = userData
@@ -177,5 +191,7 @@ data class UserData(
     val isDriverAvailable: Boolean? = null,
     val lastDriverStatusUpdate: String? = null,
     val authToken: String? = null,
-    val profileImage: String? = null
+    val profileImage: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )

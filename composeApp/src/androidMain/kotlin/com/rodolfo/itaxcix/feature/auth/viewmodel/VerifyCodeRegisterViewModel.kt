@@ -2,8 +2,8 @@ package com.rodolfo.itaxcix.feature.auth.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ResendCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterRequestDTO
 import com.rodolfo.itaxcix.domain.model.ResendCodeRegisterResult
 import com.rodolfo.itaxcix.domain.model.VerifyCodeRegisterResult
 import com.rodolfo.itaxcix.domain.repository.UserRepository

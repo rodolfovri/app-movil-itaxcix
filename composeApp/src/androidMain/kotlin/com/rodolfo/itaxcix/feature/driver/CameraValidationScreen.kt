@@ -145,7 +145,7 @@ fun CameraValidationDriverScreen(
                             capturedPhotoFile = file
                             photoTaken = true
                         },
-                        onError = { exception ->
+                        onError = {
                             photoTaken = true
                         }
                     )

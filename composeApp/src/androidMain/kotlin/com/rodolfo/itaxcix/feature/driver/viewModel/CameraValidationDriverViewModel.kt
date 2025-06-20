@@ -3,7 +3,7 @@ package com.rodolfo.itaxcix.feature.driver.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.face.Face
-import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateBiometricRequestDTO
 import com.rodolfo.itaxcix.domain.model.ValidateBiometricResult
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 import com.rodolfo.itaxcix.services.camera.analyzers.FaceDetectionAnalyzer

@@ -98,6 +98,11 @@ fun RegisterDriverScreen(
         "Ingresa tu número de teléfono"
     }
 
+    // Añadir estos estados
+    val confirmPassword by viewModel.confirmPassword.collectAsState()
+    val confirmPasswordError by viewModel.confirmPasswordError.collectAsState()
+    var isConfirmPassVisible by remember { mutableStateOf(false) }
+
     // Recolectar estados de error
     val passwordError by viewModel.passwordError.collectAsState()
     val contactError by viewModel.contactError.collectAsState()
@@ -249,6 +254,49 @@ fun RegisterDriverScreen(
                         if (passwordError != null) {
                             Text(
                                 text = passwordError ?: "",
+                                color = Color.Red,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp, start = 4.dp)
+                            )
+                        }
+
+                        // Después del campo de contraseña actual y antes del campo de contacto, añadir:
+                        OutlinedTextField(
+                            value = confirmPassword,
+                            onValueChange = { viewModel.updateConfirmPassword(it) },
+                            label = { Text(text = "Repite tu contraseña") },
+                            isError = confirmPasswordError != null,
+                            visualTransformation = if (isConfirmPassVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { isConfirmPassVisible = !isConfirmPassVisible }) {
+                                    Icon(
+                                        imageVector = if (isConfirmPassVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                        contentDescription = if (isConfirmPassVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                                        tint = ITaxCixPaletaColors.Blue1
+                                    )
+                                }
+                            },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 5.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = ITaxCixPaletaColors.Blue1,
+                                unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
+                                cursorColor = ITaxCixPaletaColors.Blue1,
+                                focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                                selectionColors = TextSelectionColors(
+                                    handleColor = ITaxCixPaletaColors.Blue1,
+                                    backgroundColor = ITaxCixPaletaColors.Blue3
+                                )
+                            )
+                        )
+
+                        if (confirmPasswordError != null) {
+                            Text(
+                                text = confirmPasswordError ?: "",
                                 color = Color.Red,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier

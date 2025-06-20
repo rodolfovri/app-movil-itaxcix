@@ -1,11 +1,8 @@
 package com.rodolfo.itaxcix.feature.auth
 
-import android.util.Log
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,8 +11,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
@@ -25,10 +20,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,7 +45,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.painterResource
@@ -90,12 +81,13 @@ fun RecoveryScreen(
 ) {
 
     val recoveryState by viewModel.recoveryState.collectAsState()
+    val isLoading = recoveryState is RecoveryViewModel.RecoveryState.Loading
+    val isRedirecting = recoveryState is RecoveryViewModel.RecoveryState.Success
+
     val contact by viewModel.contact.collectAsState()
     val contactError by viewModel.contactError.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val isLoading = recoveryState is RecoveryViewModel.RecoveryState.Loading
-    val isRedirecting = recoveryState is RecoveryViewModel.RecoveryState.Success
     var isSuccessSnackbar by remember { mutableStateOf(false) }
 
     var selectedContactMethod by remember { mutableStateOf("Email") }
@@ -300,10 +292,16 @@ fun RecoveryScreen(
 
                     OutlinedTextField(
                         value = contact,
-                        onValueChange = {
-                            viewModel.updateContact(it)
-                            viewModel.updateContactTypeId(if (selectedContactMethod == "Email") 1 else 2)
+                        onValueChange = { input ->
+                            val contactTypeId = if (selectedContactMethod == "Email") 1 else 2
+                            val filteredInput = if (contactTypeId == 2) {
+                                input.filter { it.isDigit() }.take(9)
+                            } else {
+                                input
+                            }
 
+                            viewModel.updateContact(filteredInput)
+                            viewModel.updateContactTypeId(contactTypeId)
                         },
                         label = { Text(contactMethodLabel) },
                         isError = contactError != null,

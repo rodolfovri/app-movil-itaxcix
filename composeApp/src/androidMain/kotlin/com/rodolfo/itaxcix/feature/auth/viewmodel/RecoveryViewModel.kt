@@ -26,10 +26,8 @@ class RecoveryViewModel @Inject constructor(
     val contactTypeId: StateFlow<Int> = _contactTypeId
 
     private val _contactError = MutableStateFlow<String?>(null)
-    private val _contactTypeError = MutableStateFlow<String?>(null)
 
     val contactError: StateFlow<String?> = _contactError.asStateFlow()
-    val contactTypeError: StateFlow<String?> = _contactTypeError.asStateFlow()
 
     fun updateContact(value: String) {
         _contact.value = value
@@ -112,8 +110,8 @@ class RecoveryViewModel @Inject constructor(
 
 
     sealed class RecoveryState {
-        object Initial : RecoveryState()
-        object Loading : RecoveryState()
+        data object Initial : RecoveryState()
+        data object Loading : RecoveryState()
         data class Success(val response: RecoveryResult) : RecoveryState()
         data class Error(val message: String) : RecoveryState()
     }

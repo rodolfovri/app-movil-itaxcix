@@ -1,29 +1,35 @@
 package com.rodolfo.itaxcix.data.remote.api
 
 import com.rodolfo.itaxcix.data.remote.dto.UserDTO
-import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.DriverAvailabilityResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.DriverRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.DriverStatusResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.GetProfilePhotoResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.LoginResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.RecoveryResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.RegisterDriverResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.RegisterResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ResetPasswordResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ToggleDriverAvailabilityResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.UploadProfilePhotoResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.CitizenRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.DriverRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.DriverStatusResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.GetProfilePhotoResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.LoginResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.RecoveryResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.RegisterDriverResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.RegisterResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ResendCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ResendCodeRegisterResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ResetPasswordResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.ToggleDriverAvailabilityResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.UploadProfilePhotoResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateBiometricRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateBiometricResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateDocumentRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateDocumentResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateVehicleRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateVehicleResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.RegisterIncidentRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.RegisterIncidentResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelCancelResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRespondResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelStartResponseDTO
 
 interface ApiService {
     suspend fun getUsers(): List<UserDTO>
@@ -43,4 +49,10 @@ interface ApiService {
     suspend fun toggleDriverAvailability(driverId: Int): ToggleDriverAvailabilityResponseDTO
     suspend fun getProfilePhoto(userId: Int): GetProfilePhotoResponseDTO
     suspend fun uploadProfilePhoto(userId: Int, base64Image: String): UploadProfilePhotoResponseDTO
+    suspend fun travels(travel: TravelRequestDTO): TravelResponseDTO
+    suspend fun travelRespond(travelId: Int, accept: Boolean): TravelRespondResponseDTO
+    suspend fun travelStart(travelId: Int): TravelStartResponseDTO
+    suspend fun travelCancel(travelId: Int): TravelCancelResponseDTO
+    suspend fun travelComplete(travelId: Int): TravelCancelResponseDTO
+    suspend fun registerIncident(incident: RegisterIncidentRequestDTO): RegisterIncidentResponseDTO
 }

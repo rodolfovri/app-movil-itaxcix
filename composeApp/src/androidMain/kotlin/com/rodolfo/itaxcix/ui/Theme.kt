@@ -17,4 +17,6 @@ object MyColors {
     val LightRed = Color(0xFFEA4C2D) // Rojo suave
     val ActivateGreen = Color(0xFF2ECC71)  // Verde suave para activar
     val DeactivateGray = Color(0xFF95A5A6) // Gris azulado para desactivar
+    val Green = Color(0xFF2ECC71) // Verde principal
+    val Red = Color(0xFFEA4C2D) // Rojo principal
 }

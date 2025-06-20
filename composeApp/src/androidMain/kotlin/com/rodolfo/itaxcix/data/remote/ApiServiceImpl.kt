@@ -4,33 +4,38 @@ import com.rodolfo.itaxcix.data.local.PreferencesManager
 import com.rodolfo.itaxcix.data.remote.api.ApiConfig
 import com.rodolfo.itaxcix.data.remote.dto.UserDTO
 import com.rodolfo.itaxcix.data.remote.api.ApiService
-import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.DriverAvailabilityRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.DriverAvailabilityResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.DriverRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.DriverStatusResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.GetProfilePhotoResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.LoginResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.RecoveryRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.RecoveryResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.RegisterDriverResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.RegisterResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ResetPasswordRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ResetPasswordResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ToggleDriverAvailabilityResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.UploadProfilePhotoResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.CitizenRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.DriverRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.DriverStatusResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.GetProfilePhotoResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.LoginResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.RecoveryRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.RecoveryResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.RegisterDriverResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.RegisterResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ResendCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ResendCodeRegisterResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ResetPasswordRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ResetPasswordResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.ToggleDriverAvailabilityResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.UploadProfilePhotoResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateBiometricRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateBiometricResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateDocumentRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateDocumentResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateVehicleRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateVehicleResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.RegisterIncidentRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.RegisterIncidentResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelCancelResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRespondResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelStartResponseDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
@@ -292,6 +297,105 @@ class ApiServiceImpl(
                 addAuthToken()
                 contentType(ContentType.Application.Json)
                 setBody(mapOf("base64Image" to base64Image))
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun travels(travel: TravelRequestDTO): TravelResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/travels") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(travel)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun travelRespond(travelId: Int, accept: Boolean): TravelRespondResponseDTO {
+        return safeApiCall {
+            val response = client.patch("$baseUrl/travels/$travelId/respond") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("accepted" to accept))
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun travelStart(travelId: Int): TravelStartResponseDTO {
+        return safeApiCall {
+            val response = client.patch("$baseUrl/travels/$travelId/start") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun travelCancel(travelId: Int): TravelCancelResponseDTO {
+        return safeApiCall {
+            val response = client.patch("$baseUrl/travels/$travelId/cancel") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun travelComplete(travelId: Int): TravelCancelResponseDTO {
+        return safeApiCall {
+            val response = client.patch("$baseUrl/travels/$travelId/complete") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun registerIncident(incident: RegisterIncidentRequestDTO): RegisterIncidentResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/incidents/register") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(incident)
             }
 
             if (response.status.value in 200..299) {

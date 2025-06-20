@@ -44,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.buildAnnotatedString
@@ -81,7 +80,6 @@ fun LoginScreen(
     onRecoveryClick: () -> Unit = { },
 ) {
 
-    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
     val loginState by viewModel.loginState.collectAsState()

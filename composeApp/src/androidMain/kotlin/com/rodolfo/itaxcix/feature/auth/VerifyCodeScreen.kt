@@ -1,8 +1,5 @@
 package com.rodolfo.itaxcix.feature.auth
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -18,7 +14,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,8 +50,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun VerifyCodeScreenPreview() {
     VerifyCodeScreen(
-        onVerifyCodeSuccess = { userId, token ->
-            // Acción de éxito de verificación de código
+        onVerifyCodeSuccess = { _, _ ->
+
         }
     )
 }
@@ -68,6 +63,9 @@ fun VerifyCodeScreen(
 ) {
 
     val verifyCodeState by viewModel.verifyCodeState.collectAsState()
+    val isLoading = verifyCodeState is VerifyCodeViewModel.VerifyCodeState.Loading
+    val isRedirecting = verifyCodeState is VerifyCodeViewModel.VerifyCodeState.Success
+
     val userId by viewModel.userId.collectAsState()
     val code by viewModel.code.collectAsState()
     val codeError by viewModel.codeError.collectAsState()
@@ -76,10 +74,6 @@ fun VerifyCodeScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     var isSuccessSnackbar by remember { mutableStateOf(false) }
-
-    // Estados para controlar la interfaz de carga y redirección
-    val isLoading = verifyCodeState is VerifyCodeViewModel.VerifyCodeState.Loading
-    val isRedirecting = verifyCodeState is VerifyCodeViewModel.VerifyCodeState.Success
 
     LaunchedEffect(key1 = verifyCodeState) {
         when (val state = verifyCodeState) {

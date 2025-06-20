@@ -2,7 +2,7 @@ package com.rodolfo.itaxcix.feature.auth.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.CitizenRegisterRequestDTO
 import com.rodolfo.itaxcix.domain.model.RegisterResult
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,6 +27,7 @@ class RegisterViewModel @Inject constructor(
     private val _contactTypeId = MutableStateFlow(1)
     private val _contact = MutableStateFlow("")
     private val _personId = MutableStateFlow(0)
+    private val _confirmPassword = MutableStateFlow("")
 
     // Exponer los estados como StateFlow
     val documentTypeId: StateFlow<Int> = _documentTypeId
@@ -35,16 +36,25 @@ class RegisterViewModel @Inject constructor(
     val contactTypeId: StateFlow<Int> = _contactTypeId
     val contact: StateFlow<String> = _contact
     val personId: StateFlow<Int> = _personId
+    val confirmPassword: StateFlow<String> = _confirmPassword
 
     // Estados para validación de campos
     private val _aliasError = MutableStateFlow<String?>(null)
     private val _passwordError = MutableStateFlow<String?>(null)
     private val _contactError = MutableStateFlow<String?>(null)
+    private val _confirmPasswordError = MutableStateFlow<String?>(null)
 
     // Exponer los estados de error como StateFlow
     val aliasError: StateFlow<String?> = _aliasError.asStateFlow()
     val passwordError: StateFlow<String?> = _passwordError.asStateFlow()
     val contactError: StateFlow<String?> = _contactError.asStateFlow()
+    val confirmPasswordError: StateFlow<String?> = _confirmPasswordError.asStateFlow()
+
+    fun updateConfirmPassword(value: String) {
+        _confirmPassword.value = value
+        validateConfirmPassword()
+        resetStateIfError()
+    }
 
     // Método para actualizar los campos
     fun updateDocumentTypeId(value: Int) {
@@ -60,6 +70,9 @@ class RegisterViewModel @Inject constructor(
     fun updatePassword(value: String) {
         _password.value = value
         validatePassword()
+        if (_confirmPassword.value.isNotEmpty()) {
+            validateConfirmPassword()
+        }
         resetStateIfError()
     }
 
@@ -77,6 +90,17 @@ class RegisterViewModel @Inject constructor(
     fun updatePersonId(value: Int) {
         _personId.value = value
         resetStateIfError()
+    }
+
+    // Método para validar que las contraseñas coincidan
+    private fun validateConfirmPassword() {
+        if (_confirmPassword.value.isBlank()) {
+            _confirmPasswordError.value = "Debes confirmar tu contraseña"
+        } else if (_confirmPassword.value != _password.value) {
+            _confirmPasswordError.value = "Las contraseñas no coinciden"
+        } else {
+            _confirmPasswordError.value = null
+        }
     }
 
     // Métodos de validación individual
@@ -178,6 +202,18 @@ class RegisterViewModel @Inject constructor(
             isValid = false
         } else {
             _contactError.value = null
+        }
+
+        if (_confirmPassword.value.isBlank()) {
+            _confirmPasswordError.value = "Debes confirmar tu contraseña"
+            errorMessages.add("• Debes confirmar tu contraseña")
+            isValid = false
+        } else if (_confirmPassword.value != _password.value) {
+            _confirmPasswordError.value = "Las contraseñas no coinciden"
+            errorMessages.add("• Las contraseñas no coinciden")
+            isValid = false
+        } else {
+            _confirmPasswordError.value = null
         }
 
         return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)

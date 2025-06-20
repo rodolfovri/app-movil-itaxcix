@@ -1,13 +1,12 @@
 package com.rodolfo.itaxcix.domain.repository
 
-import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.DriverRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterResponseDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.CitizenRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.DriverRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ResendCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateBiometricRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateDocumentRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateVehicleRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterRequestDTO
 import com.rodolfo.itaxcix.domain.model.GetProfilePhotoResult
 import com.rodolfo.itaxcix.domain.model.LoginResult
 import com.rodolfo.itaxcix.domain.model.RecoveryResult

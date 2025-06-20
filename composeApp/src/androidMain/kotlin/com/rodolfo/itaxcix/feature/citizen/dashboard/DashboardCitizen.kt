@@ -32,6 +32,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.rodolfo.itaxcix.data.remote.dto.websockets.InitialDriversResponse
 import com.rodolfo.itaxcix.feature.citizen.history.CitizenHistoryScreen
 import com.rodolfo.itaxcix.feature.citizen.home.CitizenHomeScreen
 import com.rodolfo.itaxcix.feature.citizen.profile.CitizenProfileScreen
@@ -59,7 +60,9 @@ object CitizenRoutes {
 @Composable
 fun DashboardCitizenScreen(
     viewModel: AuthViewModel = hiltViewModel(),
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onNavigateToRideRequest: (InitialDriversResponse.DriverInfo) -> Unit = {}
+
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val navController = rememberNavController()
@@ -124,7 +127,10 @@ fun DashboardCitizenScreen(
                         }
                     }
                 },
-                userPermissions = userPermissions
+                userPermissions = userPermissions,
+                userName = userData?.fullName ?: "Usuario",
+                userRole = "Ciudadano",
+                userImage = userData?.profileImage
             )
         },
         scrimColor = Color.Black.copy(alpha = 0.3f)
@@ -149,7 +155,9 @@ fun DashboardCitizenScreen(
             },
             content = { padding ->
                 Column(modifier = Modifier.padding(padding)) {
-                    CitizenNavHost(navController = navController)
+                    CitizenNavHost(
+                        navController = navController,
+                        onNavigateToRideRequest = onNavigateToRideRequest)
                 }
             }
         )
@@ -178,13 +186,18 @@ fun DashboardCitizenScreen(
 }
 
 @Composable
-fun CitizenNavHost(navController: NavHostController) {
+fun CitizenNavHost(
+    navController: NavHostController,
+    onNavigateToRideRequest: (InitialDriversResponse.DriverInfo) -> Unit = {}
+) {
     NavHost(
         navController = navController,
         startDestination = CitizenRoutes.HOME
     ) {
         composable(CitizenRoutes.HOME) {
-            CitizenHomeScreen()
+            CitizenHomeScreen(
+                onNavigateToRideRequest = onNavigateToRideRequest
+            )
         }
         composable(CitizenRoutes.PROFILE) {
             CitizenProfileScreen()

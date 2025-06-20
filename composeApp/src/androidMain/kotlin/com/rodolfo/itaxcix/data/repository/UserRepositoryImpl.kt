@@ -5,13 +5,14 @@ import com.rodolfo.itaxcix.data.local.PreferencesManager
 import com.rodolfo.itaxcix.data.local.UserData
 import com.rodolfo.itaxcix.data.remote.dto.UserDTO
 import com.rodolfo.itaxcix.data.remote.api.ApiService
-import com.rodolfo.itaxcix.data.remote.dto.CitizenRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.DriverRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ResendCodeRegisterRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateBiometricRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateDocumentRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.ValidateVehicleRequestDTO
-import com.rodolfo.itaxcix.data.remote.dto.VerifyCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.CitizenRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.DriverRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ResendCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateBiometricRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateDocumentRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateVehicleRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.websocket.CitizenWebSocketService
 import com.rodolfo.itaxcix.domain.model.GetProfilePhotoResult
 import com.rodolfo.itaxcix.domain.model.LoginResult
 import com.rodolfo.itaxcix.domain.model.RecoveryResult
@@ -32,7 +33,8 @@ import com.rodolfo.itaxcix.domain.repository.UserRepository
 class UserRepositoryImpl(
     private val apiService: ApiService,
     private val driverRepository: DriverRepository,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    private val citizenWebSocketService: CitizenWebSocketService
 ) : UserRepository {
     override suspend fun getUsers(): List<User> {
         return apiService.getUsers().map { it.toDomain() }
@@ -112,6 +114,55 @@ class UserRepositoryImpl(
         val permissions = response.data.permissions
         val rating = response.data.rating
 
+        // Guardar información básica del usuario
+        val userData = UserData(
+            id = userId.toInt(),
+            firstName = firstName,
+            lastName = lastName,
+            fullName = "$firstName $lastName",
+            isTucActive = null,
+            rating = rating,
+            nickname = "",
+            document = document,
+            email = "",
+            phone = "",
+            address = "",
+            city = "",
+            country = "",
+            roles = roles,
+            permissions = permissions,
+            status = "",
+            isDriverAvailable = availabilityStatus,
+            lastDriverStatusUpdate = null,
+            authToken = token
+        )
+
+        // Guardar datos básicos primero
+        preferencesManager.saveUserData(userData)
+
+        // Cargar la foto de perfil inmediatamente después del login
+        try {
+            val photoResult = getProfilePhoto(userId.toInt())
+            if (photoResult.base64Image != null) {
+                val updatedUserData = userData.copy(
+                    profileImage = photoResult.base64Image
+                )
+                preferencesManager.saveUserData(updatedUserData)
+            }
+        } catch (e: Exception) {
+            Log.e("UserRepositoryImpl", "Error cargando foto de perfil: ${e.message}")
+        }
+
+        if (roles.contains("CIUDADANO")) {
+            try {
+                // Conectar al WebSocket para el ciudadano
+                Log.d("UserRepositoryImpl", "Conectando al WebSocket para el ciudadano")
+                citizenWebSocketService.connect()
+            } catch (e: Exception) {
+                Log.e("UserRepositoryImpl", "Error conectando al WebSocket: ${e.message}")
+            }
+        }
+
         val user = User(
             id = userId,
             nickname = "",
@@ -126,33 +177,7 @@ class UserRepositoryImpl(
             authToken = token
         )
 
-        preferencesManager.saveUserData(
-            UserData(
-                id = userId.toInt(),
-                firstName = firstName,
-                lastName = lastName,
-                fullName = "$firstName $lastName",
-                isTucActive = null, // No se maneja en este contexto
-                rating = rating,
-                nickname = "",
-                document = document,
-                email = "",
-                phone = "",
-                address = "",
-                city = "",
-                country = "",
-                roles = roles,
-                permissions = permissions,
-                status = "",
-                isDriverAvailable = availabilityStatus,
-                lastDriverStatusUpdate = null,
-                authToken = token
-            )
-        )
-
-        Log.d("Token", "Token: $token")
-
-        return LoginResult(message =  response.message, user = user)
+        return LoginResult(message = response.message, user = user)
     }
 
     override suspend fun recovery(contactTypeId: Int, contact: String): RecoveryResult {
