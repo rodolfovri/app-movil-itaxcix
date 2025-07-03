@@ -746,10 +746,10 @@ fun AppNavigation(
         composable(Routes.CHANGE_EMAIL_CITIZEN) {
             val viewModel = hiltViewModel<CitizenContactViewModel>()
 
-
             CitizenChangeEmailScreen(
                 viewModel = viewModel,
-                onBackPressed = { navController.popBackStack() }
+                onBackPressed = { navController.popBackStack() },
+                onSuccess = { navController.popBackStack() }
             )
         }
 
@@ -758,7 +758,8 @@ fun AppNavigation(
 
             CitizenChangePhoneScreen(
                 viewModel = viewModel,
-                onBackPressed = { navController.popBackStack() }
+                onBackPressed = { navController.popBackStack() },
+                onSuccess = { navController.popBackStack() }
             )
         }
 
@@ -767,7 +768,8 @@ fun AppNavigation(
 
             DriverChangeEmailScreen(
                 viewModel = viewModel,
-                onBackPressed = { navController.popBackStack() }
+                onBackPressed = { navController.popBackStack() },
+                onSuccess = { navController.popBackStack() }
             )
         }
 
@@ -776,7 +778,8 @@ fun AppNavigation(
 
             DriverChangePhoneScreen(
                 viewModel = viewModel,
-                onBackPressed = { navController.popBackStack() }
+                onBackPressed = { navController.popBackStack() },
+                onSuccess = { navController.popBackStack() }
             )
         }
 

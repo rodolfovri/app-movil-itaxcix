@@ -1,25 +1,21 @@
 package com.rodolfo.itaxcix.feature.driver.profile
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.TextSelectionColors
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,11 +44,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rodolfo.itaxcix.feature.driver.profile.driverProfileViewModel.DriverContactViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
@@ -63,14 +60,16 @@ import kotlinx.coroutines.delay
 @Composable
 fun DriverChangeEmailScreen(
     viewModel: DriverContactViewModel = hiltViewModel(),
-    onBackPressed: () -> Unit = {}
+    onBackPressed: () -> Unit = {},
+    onSuccess: () -> Unit = {}
 ) {
-    // Estados
+    // Estados de validación
     val newEmail by viewModel.newEmail.collectAsState()
     val verificationCode by viewModel.verificationCode.collectAsState()
     val emailError by viewModel.emailError.collectAsState()
     val codeError by viewModel.codeError.collectAsState()
 
+    // Estados de operación
     val changeEmailState by viewModel.changeEmailState.collectAsState()
     val verifyEmailState by viewModel.verifyEmailState.collectAsState()
 
@@ -78,9 +77,13 @@ fun DriverChangeEmailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var isSuccessSnackbar by remember { mutableStateOf(false) }
     var showVerificationStep by remember { mutableStateOf(false) }
-    var isRedirecting by remember { mutableStateOf(false) }
 
-    // Efectos para manejar estados
+    // Estados de carga y éxito
+    val isLoadingRequest = changeEmailState is DriverContactViewModel.ChangeEmailState.Loading
+    val isLoadingVerify = verifyEmailState is DriverContactViewModel.VerifyEmailState.Loading
+    val isSuccess = verifyEmailState is DriverContactViewModel.VerifyEmailState.Success
+
+    // Efectos
     LaunchedEffect(changeEmailState) {
         when (val state = changeEmailState) {
             is DriverContactViewModel.ChangeEmailState.Error -> {
@@ -112,19 +115,13 @@ fun DriverChangeEmailScreen(
             }
             is DriverContactViewModel.VerifyEmailState.Success -> {
                 isSuccessSnackbar = true
-                delay(3000)
-                isRedirecting = true // Indicar que se está redirigiendo
                 delay(2000)
-                onBackPressed()
+                onSuccess()
                 viewModel.onVerifyEmailSuccessShown()
             }
             else -> {}
         }
     }
-
-    val isLoading = changeEmailState is DriverContactViewModel.ChangeEmailState.Loading ||
-            verifyEmailState is DriverContactViewModel.VerifyEmailState.Loading
-    val isSuccess = verifyEmailState is DriverContactViewModel.VerifyEmailState.Success
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -156,177 +153,220 @@ fun DriverChangeEmailScreen(
                     }
                 }
             },
+            containerColor = Color.White,
             topBar = {
                 TopAppBar(
                     title = {
                         Text(
-                            text = "Cambiar Email"
+                            text = "",
+                            modifier = Modifier.fillMaxWidth()
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBackPressed) {
+                        IconButton(onClick = { onBackPressed() }) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver atrás"
+                                imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                                contentDescription = "Volver atrás",
                             )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.White,
-                        titleContentColor = Color.Black,
-                        navigationIconContentColor = Color.Black
+                        containerColor = Color.White
                     )
                 )
             }
-        ) { paddingValues ->
+        ) { padding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(ITaxCixPaletaColors.Background)
-                    .padding(16.dp)
+                    .padding(padding)
+                    .padding(30.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
+                        .fillMaxSize(),
+                    verticalArrangement = if (!showVerificationStep) Arrangement.SpaceBetween else Arrangement.Top
                 ) {
                     if (!showVerificationStep) {
-                        // Paso 1: Solicitar nuevo email
-                        Text(
-                            text = "Nuevo email",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-
-                        Text(
-                            text = "Ingresa tu nuevo correo electrónico. Te enviaremos un código de verificación para confirmar el cambio.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-
-                        OutlinedTextField(
-                            value = newEmail,
-                            onValueChange = { viewModel.updateNewEmail(it) },
-                            label = { Text("Nuevo correo electrónico") },
-                            isError = emailError != null,
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 5.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ITaxCixPaletaColors.Blue1,
-                                unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
-                                cursorColor = ITaxCixPaletaColors.Blue1,
-                                focusedLabelColor = ITaxCixPaletaColors.Blue1,
-                                selectionColors = TextSelectionColors(
-                                    handleColor = ITaxCixPaletaColors.Blue1,
-                                    backgroundColor = ITaxCixPaletaColors.Blue3
-                                )
-                            )
-                        )
-
-                        if (emailError != null) {
+                        // Paso 1: Cambiar email
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = emailError ?: "",
-                                color = Color.Red,
-                                style = MaterialTheme.typography.bodySmall,
+                                text = "Cambiar email",
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 16.dp, start = 4.dp)
+                                    .padding(bottom = 8.dp),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
                             )
-                        }
 
-                        Button(
-                            onClick = {
-                                focusManager.clearFocus()
-                                viewModel.requestChangeEmail()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RectangleShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = ITaxCixPaletaColors.Blue1,
-                                contentColor = Color.White
-                            )
-                        ) {
                             Text(
-                                text = "Enviar código de verificación",
-                                style = MaterialTheme.typography.labelLarge,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(8.dp)
+                                text = "Ingresa tu nuevo correo electrónico. Te enviaremos un código de verificación para confirmar el cambio.",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 30.dp),
                             )
+
+                            OutlinedTextField(
+                                value = newEmail,
+                                onValueChange = { viewModel.onNewEmailChange(it) },
+                                label = { Text(text = "Nuevo correo electrónico") },
+                                isError = emailError != null,
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Email
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 5.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = ITaxCixPaletaColors.Blue1,
+                                    unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
+                                    cursorColor = ITaxCixPaletaColors.Blue1,
+                                    focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                                    selectionColors = TextSelectionColors(
+                                        handleColor = ITaxCixPaletaColors.Blue1,
+                                        backgroundColor = ITaxCixPaletaColors.Blue3
+                                    )
+                                )
+                            )
+
+                            if (emailError != null) {
+                                Text(
+                                    text = emailError ?: "",
+                                    color = Color.Red,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 8.dp, start = 4.dp)
+                                )
+                            }
+
+                            Text(
+                                text = "• Asegúrate de ingresar un correo válido\n• Ejemplo: usuario@correo.com",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 20.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+
+                            Button(
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    viewModel.requestChangeEmail()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp),
+                                shape = RectangleShape,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ITaxCixPaletaColors.Blue1,
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text(
+                                    text = "Enviar código de verificación",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp)
+                                )
+                            }
                         }
 
+                        Text(
+                            text = buildAnnotatedString {
+                                append("Al continuar, se enviará un código de verificación al nuevo correo. ")
+                                withStyle(
+                                    style = MaterialTheme.typography.labelLarge.toSpanStyle()
+                                        .copy(color = ITaxCixPaletaColors.Blue1)
+                                ) {
+                                    append("Verifica tu bandeja de entrada.")
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 20.dp)
+                                .clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { },
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center
+                        )
                     } else {
                         // Paso 2: Verificar código
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.VerifiedUser,
-                                contentDescription = null,
-                                tint = ITaxCixPaletaColors.Blue1,
-                                modifier = Modifier.size(24.dp)
-                            )
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = "Verificación",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-
-                        Text(
-                            text = "Hemos enviado un código de 6 dígitos a $newEmail. Ingresa el código para confirmar el cambio.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-
-                        OutlinedTextField(
-                            value = verificationCode,
-                            onValueChange = { viewModel.updateVerificationCode(it) },
-                            label = { Text("Código de verificación") },
-                            isError = codeError != null,
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 5.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ITaxCixPaletaColors.Blue1,
-                                unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
-                                cursorColor = ITaxCixPaletaColors.Blue1,
-                                focusedLabelColor = ITaxCixPaletaColors.Blue1,
-                                selectionColors = TextSelectionColors(
-                                    handleColor = ITaxCixPaletaColors.Blue1,
-                                    backgroundColor = ITaxCixPaletaColors.Blue3
-                                )
-                            )
-                        )
-
-                        if (codeError != null) {
-                            Text(
-                                text = codeError ?: "",
-                                color = Color.Red,
-                                style = MaterialTheme.typography.bodySmall,
+                                text = "Verificar código",
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 16.dp, start = 4.dp)
+                                    .padding(bottom = 8.dp),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
                             )
-                        }
 
-                        Column {
+                            Text(
+                                text = "Hemos enviado un código de 6 dígitos a $newEmail. Ingresa el código para confirmar el cambio.",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 30.dp),
+                            )
+
+                            OutlinedTextField(
+                                value = verificationCode,
+                                onValueChange = { viewModel.onVerificationCodeChange(it) },
+                                label = { Text(text = "Código de verificación") },
+                                isError = codeError != null,
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 5.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = ITaxCixPaletaColors.Blue1,
+                                    unfocusedBorderColor = ITaxCixPaletaColors.Blue3,
+                                    cursorColor = ITaxCixPaletaColors.Blue1,
+                                    focusedLabelColor = ITaxCixPaletaColors.Blue1,
+                                    selectionColors = TextSelectionColors(
+                                        handleColor = ITaxCixPaletaColors.Blue1,
+                                        backgroundColor = ITaxCixPaletaColors.Blue3
+                                    )
+                                )
+                            )
+
+                            if (codeError != null) {
+                                Text(
+                                    text = codeError ?: "",
+                                    color = Color.Red,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 8.dp, start = 4.dp)
+                                )
+                            }
+
+                            Text(
+                                text = "• El código debe tener exactamente 6 dígitos\n• Solo se permiten números\n• Ejemplo: 123456",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 20.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+
                             Button(
                                 onClick = {
                                     focusManager.clearFocus()
                                     viewModel.verifyEmailChange()
                                 },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp),
                                 shape = RectangleShape,
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = ITaxCixPaletaColors.Blue1,
@@ -337,16 +377,16 @@ fun DriverChangeEmailScreen(
                                     text = "Verificar código",
                                     style = MaterialTheme.typography.labelLarge,
                                     textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(8.dp)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp)
                                 )
                             }
-
-                            Spacer(modifier = Modifier.height(12.dp))
 
                             Button(
                                 onClick = {
                                     showVerificationStep = false
-                                    viewModel.updateVerificationCode("")
+                                    viewModel.onVerificationCodeChange("")
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RectangleShape,
@@ -368,19 +408,13 @@ fun DriverChangeEmailScreen(
             }
         }
 
-        // Overlay de carga
         ITaxCixProgressRequest(
-            isVisible = isLoading || isSuccess || isRedirecting,
-            isSuccess = isSuccess || isRedirecting,
-            loadingTitle = when {
-                changeEmailState is DriverContactViewModel.ChangeEmailState.Loading -> "Enviando código"
-                verifyEmailState is DriverContactViewModel.VerifyEmailState.Loading -> "Verificando código"
-                isRedirecting -> "Redirigiendo"
-                else -> "Verificando código"
-            },
-            successTitle = if (isRedirecting) "Redirigiendo" else "Email actualizado",
+            isVisible = isLoadingRequest || isLoadingVerify || isSuccess,
+            isSuccess = isSuccess,
+            loadingTitle = if (isLoadingRequest) "Enviando código" else "Verificando código",
+            successTitle = "¡Email actualizado!",
             loadingMessage = "Por favor espera un momento...",
-            successMessage = if (isRedirecting) "Regresando a la pantalla anterior..." else "Tu email ha sido actualizado correctamente"
+            successMessage = "Regresando al perfil..."
         )
     }
 }

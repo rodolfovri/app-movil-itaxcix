@@ -27,46 +27,59 @@ class DriverContactViewModel @Inject constructor(
 
     val userData = preferencesManager.userData
 
-    // Estados del formulario
+    // Estados del formulario EMAIL
     private val _newEmail = MutableStateFlow("")
     private val _verificationCode = MutableStateFlow("")
-
-    val newEmail: StateFlow<String> = _newEmail.asStateFlow()
-    val verificationCode: StateFlow<String> = _verificationCode.asStateFlow()
-
-    // Estados de validación
     private val _emailError = MutableStateFlow<String?>(null)
     private val _codeError = MutableStateFlow<String?>(null)
 
+    val newEmail: StateFlow<String> = _newEmail.asStateFlow()
+    val verificationCode: StateFlow<String> = _verificationCode.asStateFlow()
     val emailError: StateFlow<String?> = _emailError.asStateFlow()
     val codeError: StateFlow<String?> = _codeError.asStateFlow()
 
-    // Estados de la operación
+    // Estados de operación EMAIL
     private val _changeEmailState = MutableStateFlow<ChangeEmailState>(ChangeEmailState.Initial)
     val changeEmailState: StateFlow<ChangeEmailState> = _changeEmailState.asStateFlow()
 
     private val _verifyEmailState = MutableStateFlow<VerifyEmailState>(VerifyEmailState.Initial)
     val verifyEmailState: StateFlow<VerifyEmailState> = _verifyEmailState.asStateFlow()
 
-    // Funciones para actualizar campos
-    fun updateNewEmail(value: String) {
-        _newEmail.value = value
+    // Estados del formulario PHONE
+    private val _newPhone = MutableStateFlow("")
+    private val _verificationCodePhone = MutableStateFlow("")
+    private val _phoneError = MutableStateFlow<String?>(null)
+    private val _codePhoneError = MutableStateFlow<String?>(null)
+
+    val newPhone: StateFlow<String> = _newPhone.asStateFlow()
+    val verificationCodePhone: StateFlow<String> = _verificationCodePhone.asStateFlow()
+    val phoneError: StateFlow<String?> = _phoneError.asStateFlow()
+    val codePhoneError: StateFlow<String?> = _codePhoneError.asStateFlow()
+
+    // Estados de operación PHONE
+    private val _changePhoneState = MutableStateFlow<ChangePhoneState>(ChangePhoneState.Initial)
+    val changePhoneState: StateFlow<ChangePhoneState> = _changePhoneState.asStateFlow()
+
+    private val _verifyPhoneState = MutableStateFlow<VerifyPhoneState>(VerifyPhoneState.Initial)
+    val verifyPhoneState: StateFlow<VerifyPhoneState> = _verifyPhoneState.asStateFlow()
+
+    // FUNCIONES EMAIL
+    fun onNewEmailChange(newValue: String) {
+        _newEmail.value = newValue.trim()
         validateEmail()
         resetChangeEmailStateIfError()
     }
 
-    fun updateVerificationCode(value: String) {
-        _verificationCode.value = value
-        validateCode()
+    fun onVerificationCodeChange(newValue: String) {
+        val filteredValue = newValue.filter { it.isDigit() }.take(6)
+        _verificationCode.value = filteredValue
+        validateVerificationCode()
         resetVerifyEmailStateIfError()
     }
 
-    // Validaciones
     private fun validateEmail() {
         if (_newEmail.value.isBlank()) {
             _emailError.value = "El correo electrónico no puede estar vacío"
-        } else if (_newEmail.value.contains(" ")) {
-            _emailError.value = "El correo electrónico no puede contener espacios"
         } else if (!_newEmail.value.matches(Regex("^[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$"))) {
             _emailError.value = "Ingresa un correo electrónico válido"
         } else {
@@ -74,43 +87,23 @@ class DriverContactViewModel @Inject constructor(
         }
     }
 
-    private fun validateCode() {
+    private fun validateVerificationCode() {
         if (_verificationCode.value.isBlank()) {
             _codeError.value = "El código de verificación no puede estar vacío"
         } else if (_verificationCode.value.length != 6) {
-            _codeError.value = "El código debe tener 6 dígitos"
-        } else if (!_verificationCode.value.matches(Regex("^[0-9]{6}$"))) {
-            _codeError.value = "El código solo puede contener números"
+            _codeError.value = "El código debe tener exactamente 6 dígitos"
         } else {
             _codeError.value = null
         }
     }
 
-    // Resetear estados si hay error
-    private fun resetChangeEmailStateIfError() {
-        if (_changeEmailState.value is ChangeEmailState.Error) {
-            _changeEmailState.value = ChangeEmailState.Initial
-        }
-    }
-
-    private fun resetVerifyEmailStateIfError() {
-        if (_verifyEmailState.value is VerifyEmailState.Error) {
-            _verifyEmailState.value = VerifyEmailState.Initial
-        }
-    }
-
-    // Validación completa para cambio de email
-    private fun validateChangeEmailFields(): Pair<Boolean, String?> {
+    private fun validateFieldsForEmailChange(): Pair<Boolean, String?> {
         val errorMessages = mutableListOf<String>()
         var isValid = true
 
         if (_newEmail.value.isBlank()) {
             _emailError.value = "El correo electrónico no puede estar vacío"
             errorMessages.add("• El correo electrónico no puede estar vacío")
-            isValid = false
-        } else if (_newEmail.value.contains(" ")) {
-            _emailError.value = "El correo electrónico no puede contener espacios"
-            errorMessages.add("• El correo electrónico no puede contener espacios")
             isValid = false
         } else if (!_newEmail.value.matches(Regex("^[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$"))) {
             _emailError.value = "Ingresa un correo electrónico válido"
@@ -123,8 +116,7 @@ class DriverContactViewModel @Inject constructor(
         return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
     }
 
-    // Validación completa para verificación
-    private fun validateVerifyFields(): Pair<Boolean, String?> {
+    private fun validateFieldsForEmailVerification(): Pair<Boolean, String?> {
         val errorMessages = mutableListOf<String>()
         var isValid = true
 
@@ -133,12 +125,8 @@ class DriverContactViewModel @Inject constructor(
             errorMessages.add("• El código de verificación no puede estar vacío")
             isValid = false
         } else if (_verificationCode.value.length != 6) {
-            _codeError.value = "El código debe tener 6 dígitos"
-            errorMessages.add("• El código debe tener 6 dígitos")
-            isValid = false
-        } else if (!_verificationCode.value.matches(Regex("^[0-9]{6}$"))) {
-            _codeError.value = "El código solo puede contener números"
-            errorMessages.add("• El código solo puede contener números")
+            _codeError.value = "El código debe tener exactamente 6 dígitos"
+            errorMessages.add("• El código debe tener exactamente 6 dígitos")
             isValid = false
         } else {
             _codeError.value = null
@@ -147,11 +135,10 @@ class DriverContactViewModel @Inject constructor(
         return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
     }
 
-    // Función para solicitar cambio de email
     fun requestChangeEmail() {
         _changeEmailState.value = ChangeEmailState.Initial
 
-        val (isValid, errorMessage) = validateChangeEmailFields()
+        val (isValid, errorMessage) = validateFieldsForEmailChange()
         if (!isValid) {
             _changeEmailState.value = ChangeEmailState.Error(errorMessage ?: "Por favor, corrige los errores antes de continuar.")
             return
@@ -176,11 +163,10 @@ class DriverContactViewModel @Inject constructor(
         }
     }
 
-    // Función para verificar código
     fun verifyEmailChange() {
         _verifyEmailState.value = VerifyEmailState.Initial
 
-        val (isValid, errorMessage) = validateVerifyFields()
+        val (isValid, errorMessage) = validateFieldsForEmailVerification()
         if (!isValid) {
             _verifyEmailState.value = VerifyEmailState.Error(errorMessage ?: "Por favor, corrige los errores antes de continuar.")
             return
@@ -200,7 +186,6 @@ class DriverContactViewModel @Inject constructor(
                 val result = userRepository.verifyChangeEmail(request)
                 _verifyEmailState.value = VerifyEmailState.Success(result)
 
-                // Actualizar el email en las preferencias locales
                 val currentUserData = userData.value
                 currentUserData?.let {
                     val updatedUserData = it.copy(email = _newEmail.value)
@@ -213,51 +198,89 @@ class DriverContactViewModel @Inject constructor(
         }
     }
 
-    // Métodos para consumir eventos
-    fun onChangeEmailErrorShown() {
-        if (_changeEmailState.value is ChangeEmailState.Error) {
-            _changeEmailState.value = ChangeEmailState.Initial
+    // FUNCIONES PHONE
+    fun onNewPhoneChange(newValue: String) {
+        val filteredValue = newValue.filter { it.isDigit() }.take(9)
+        _newPhone.value = filteredValue
+        validatePhone()
+        resetChangePhoneStateIfError()
+    }
+
+    fun onVerificationCodePhoneChange(newValue: String) {
+        val filteredValue = newValue.filter { it.isDigit() }.take(6)
+        _verificationCodePhone.value = filteredValue
+        validateVerificationCodePhone()
+        resetVerifyPhoneStateIfError()
+    }
+
+    private fun validatePhone() {
+        if (_newPhone.value.isBlank()) {
+            _phoneError.value = "El número de teléfono no puede estar vacío"
+        } else if (!_newPhone.value.startsWith("9")) {
+            _phoneError.value = "El número debe iniciar con 9"
+        } else if (_newPhone.value.length != 9) {
+            _phoneError.value = "El número debe tener exactamente 9 dígitos"
+        } else {
+            _phoneError.value = null
         }
     }
 
-    fun onChangeEmailSuccessShown() {
-        if (_changeEmailState.value is ChangeEmailState.Success) {
-            _changeEmailState.value = ChangeEmailState.Initial
+    private fun validateVerificationCodePhone() {
+        if (_verificationCodePhone.value.isBlank()) {
+            _codePhoneError.value = "El código de verificación no puede estar vacío"
+        } else if (_verificationCodePhone.value.length != 6) {
+            _codePhoneError.value = "El código debe tener exactamente 6 dígitos"
+        } else {
+            _codePhoneError.value = null
         }
     }
 
-    fun onVerifyEmailErrorShown() {
-        if (_verifyEmailState.value is VerifyEmailState.Error) {
-            _verifyEmailState.value = VerifyEmailState.Initial
+    private fun validateFieldsForPhoneChange(): Pair<Boolean, String?> {
+        val errorMessages = mutableListOf<String>()
+        var isValid = true
+
+        if (_newPhone.value.isBlank()) {
+            _phoneError.value = "El número de teléfono no puede estar vacío"
+            errorMessages.add("• El número de teléfono no puede estar vacío")
+            isValid = false
+        } else if (!_newPhone.value.startsWith("9")) {
+            _phoneError.value = "El número debe iniciar con 9"
+            errorMessages.add("• El número debe iniciar con 9")
+            isValid = false
+        } else if (_newPhone.value.length != 9) {
+            _phoneError.value = "El número debe tener exactamente 9 dígitos"
+            errorMessages.add("• El número debe tener exactamente 9 dígitos")
+            isValid = false
+        } else {
+            _phoneError.value = null
         }
+
+        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
     }
 
-    fun onVerifyEmailSuccessShown() {
-        if (_verifyEmailState.value is VerifyEmailState.Success) {
-            _verifyEmailState.value = VerifyEmailState.Initial
+    private fun validateFieldsForPhoneVerification(): Pair<Boolean, String?> {
+        val errorMessages = mutableListOf<String>()
+        var isValid = true
+
+        if (_verificationCodePhone.value.isBlank()) {
+            _codePhoneError.value = "El código de verificación no puede estar vacío"
+            errorMessages.add("• El código de verificación no puede estar vacío")
+            isValid = false
+        } else if (_verificationCodePhone.value.length != 6) {
+            _codePhoneError.value = "El código debe tener exactamente 6 dígitos"
+            errorMessages.add("• El código debe tener exactamente 6 dígitos")
+            isValid = false
+        } else {
+            _codePhoneError.value = null
         }
+
+        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
     }
 
-    // Estados sellados
-    sealed class ChangeEmailState {
-        data object Initial : ChangeEmailState()
-        data object Loading : ChangeEmailState()
-        data class Success(val result: ChangeEmailResult) : ChangeEmailState()
-        data class Error(val message: String) : ChangeEmailState()
-    }
-
-    sealed class VerifyEmailState {
-        data object Initial : VerifyEmailState()
-        data object Loading : VerifyEmailState()
-        data class Success(val result: VerifyChangeEmailResult) : VerifyEmailState()
-        data class Error(val message: String) : VerifyEmailState()
-    }
-
-    // Función para solicitar cambio de teléfono
     fun requestChangePhone() {
         _changePhoneState.value = ChangePhoneState.Initial
 
-        val (isValid, errorMessage) = validateChangePhoneFields()
+        val (isValid, errorMessage) = validateFieldsForPhoneChange()
         if (!isValid) {
             _changePhoneState.value = ChangePhoneState.Error(errorMessage ?: "Por favor, corrige los errores antes de continuar.")
             return
@@ -283,132 +306,10 @@ class DriverContactViewModel @Inject constructor(
         }
     }
 
-
-    // Estados del formulario para teléfono
-    private val _newPhone = MutableStateFlow("")
-    private val _verificationCodePhone = MutableStateFlow("")
-
-    val newPhone: StateFlow<String> = _newPhone.asStateFlow()
-    val verificationCodePhone: StateFlow<String> = _verificationCodePhone.asStateFlow()
-
-    // Estados de validación para teléfono
-    private val _phoneError = MutableStateFlow<String?>(null)
-    private val _codePhoneError = MutableStateFlow<String?>(null)
-
-    val phoneError: StateFlow<String?> = _phoneError.asStateFlow()
-    val codePhoneError: StateFlow<String?> = _codePhoneError.asStateFlow()
-
-    // Estados de la operación para teléfono
-    private val _changePhoneState = MutableStateFlow<ChangePhoneState>(ChangePhoneState.Initial)
-    val changePhoneState: StateFlow<ChangePhoneState> = _changePhoneState.asStateFlow()
-
-    private val _verifyPhoneState = MutableStateFlow<VerifyPhoneState>(VerifyPhoneState.Initial)
-    val verifyPhoneState: StateFlow<VerifyPhoneState> = _verifyPhoneState.asStateFlow()
-
-    // Funciones para actualizar campos de teléfono
-    fun updateNewPhone(value: String) {
-        _newPhone.value = value
-        validatePhone()
-        resetChangePhoneStateIfError()
-    }
-
-    fun updateVerificationCodePhone(value: String) {
-        _verificationCodePhone.value = value
-        validateCodePhone()
-        resetVerifyPhoneStateIfError()
-    }
-
-    // Validaciones para teléfono
-    private fun validatePhone() {
-        if (_newPhone.value.isBlank()) {
-            _phoneError.value = "El número de teléfono no puede estar vacío"
-        } else if (_newPhone.value.contains(" ")) {
-            _phoneError.value = "El número de teléfono no puede contener espacios"
-        } else if (!_newPhone.value.matches(Regex("^9[0-9]{8}$"))) {
-            _phoneError.value = "Ingresa un número válido que inicie con 9 y tenga 9 dígitos"
-        } else {
-            _phoneError.value = null
-        }
-    }
-
-    private fun validateCodePhone() {
-        if (_verificationCodePhone.value.isBlank()) {
-            _codePhoneError.value = "El código de verificación no puede estar vacío"
-        } else if (_verificationCodePhone.value.length != 6) {
-            _codePhoneError.value = "El código debe tener 6 dígitos"
-        } else if (!_verificationCodePhone.value.matches(Regex("^[0-9]{6}$"))) {
-            _codePhoneError.value = "El código solo puede contener números"
-        } else {
-            _codePhoneError.value = null
-        }
-    }
-
-    // Resetear estados si hay error para teléfono
-    private fun resetChangePhoneStateIfError() {
-        if (_changePhoneState.value is ChangePhoneState.Error) {
-            _changePhoneState.value = ChangePhoneState.Initial
-        }
-    }
-
-    private fun resetVerifyPhoneStateIfError() {
-        if (_verifyPhoneState.value is VerifyPhoneState.Error) {
-            _verifyPhoneState.value = VerifyPhoneState.Initial
-        }
-    }
-
-    // Validación completa para cambio de teléfono
-    private fun validateChangePhoneFields(): Pair<Boolean, String?> {
-        val errorMessages = mutableListOf<String>()
-        var isValid = true
-
-        if (_newPhone.value.isBlank()) {
-            _phoneError.value = "El número de teléfono no puede estar vacío"
-            errorMessages.add("• El número de teléfono no puede estar vacío")
-            isValid = false
-        } else if (_newPhone.value.contains(" ")) {
-            _phoneError.value = "El número de teléfono no puede contener espacios"
-            errorMessages.add("• El número de teléfono no puede contener espacios")
-            isValid = false
-        } else if (!_newPhone.value.matches(Regex("^9[0-9]{8}$"))) {
-            _phoneError.value = "Ingresa un número válido que inicie con 9 y tenga 9 dígitos"
-            errorMessages.add("• Ingresa un número válido que inicie con 9 y tenga 9 dígitos")
-            isValid = false
-        } else {
-            _phoneError.value = null
-        }
-
-        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
-    }
-
-    // Validación completa para verificación de teléfono
-    private fun validateVerifyPhoneFields(): Pair<Boolean, String?> {
-        val errorMessages = mutableListOf<String>()
-        var isValid = true
-
-        if (_verificationCodePhone.value.isBlank()) {
-            _codePhoneError.value = "El código de verificación no puede estar vacío"
-            errorMessages.add("• El código de verificación no puede estar vacío")
-            isValid = false
-        } else if (_verificationCodePhone.value.length != 6) {
-            _codePhoneError.value = "El código debe tener 6 dígitos"
-            errorMessages.add("• El código debe tener 6 dígitos")
-            isValid = false
-        } else if (!_verificationCodePhone.value.matches(Regex("^[0-9]{6}$"))) {
-            _codePhoneError.value = "El código solo puede contener números"
-            errorMessages.add("• El código solo puede contener números")
-            isValid = false
-        } else {
-            _codePhoneError.value = null
-        }
-
-        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
-    }
-
-    // Función para verificar código de teléfono
     fun verifyPhoneChange() {
         _verifyPhoneState.value = VerifyPhoneState.Initial
 
-        val (isValid, errorMessage) = validateVerifyPhoneFields()
+        val (isValid, errorMessage) = validateFieldsForPhoneVerification()
         if (!isValid) {
             _verifyPhoneState.value = VerifyPhoneState.Error(errorMessage ?: "Por favor, corrige los errores antes de continuar.")
             return
@@ -428,7 +329,6 @@ class DriverContactViewModel @Inject constructor(
                 val result = userRepository.verifyChangePhone(request)
                 _verifyPhoneState.value = VerifyPhoneState.Success(result)
 
-                // Actualizar el teléfono en las preferencias locales
                 val currentUserData = userData.value
                 currentUserData?.let {
                     val updatedUserData = it.copy(phone = _newPhone.value)
@@ -441,8 +341,56 @@ class DriverContactViewModel @Inject constructor(
         }
     }
 
+    // Reset states
+    private fun resetChangeEmailStateIfError() {
+        if (_changeEmailState.value is ChangeEmailState.Error) {
+            _changeEmailState.value = ChangeEmailState.Initial
+        }
+    }
 
-    // Métodos para consumir eventos de teléfono
+    private fun resetVerifyEmailStateIfError() {
+        if (_verifyEmailState.value is VerifyEmailState.Error) {
+            _verifyEmailState.value = VerifyEmailState.Initial
+        }
+    }
+
+    private fun resetChangePhoneStateIfError() {
+        if (_changePhoneState.value is ChangePhoneState.Error) {
+            _changePhoneState.value = ChangePhoneState.Initial
+        }
+    }
+
+    private fun resetVerifyPhoneStateIfError() {
+        if (_verifyPhoneState.value is VerifyPhoneState.Error) {
+            _verifyPhoneState.value = VerifyPhoneState.Initial
+        }
+    }
+
+    // Event handlers
+    fun onChangeEmailErrorShown() {
+        if (_changeEmailState.value is ChangeEmailState.Error) {
+            _changeEmailState.value = ChangeEmailState.Initial
+        }
+    }
+
+    fun onChangeEmailSuccessShown() {
+        if (_changeEmailState.value is ChangeEmailState.Success) {
+            _changeEmailState.value = ChangeEmailState.Initial
+        }
+    }
+
+    fun onVerifyEmailErrorShown() {
+        if (_verifyEmailState.value is VerifyEmailState.Error) {
+            _verifyEmailState.value = VerifyEmailState.Initial
+        }
+    }
+
+    fun onVerifyEmailSuccessShown() {
+        if (_verifyEmailState.value is VerifyEmailState.Success) {
+            _verifyEmailState.value = VerifyEmailState.Initial
+        }
+    }
+
     fun onChangePhoneErrorShown() {
         if (_changePhoneState.value is ChangePhoneState.Error) {
             _changePhoneState.value = ChangePhoneState.Initial
@@ -467,7 +415,21 @@ class DriverContactViewModel @Inject constructor(
         }
     }
 
-    // Estados sellados para teléfono
+    // Sealed classes
+    sealed class ChangeEmailState {
+        data object Initial : ChangeEmailState()
+        data object Loading : ChangeEmailState()
+        data class Success(val result: ChangeEmailResult) : ChangeEmailState()
+        data class Error(val message: String) : ChangeEmailState()
+    }
+
+    sealed class VerifyEmailState {
+        data object Initial : VerifyEmailState()
+        data object Loading : VerifyEmailState()
+        data class Success(val result: VerifyChangeEmailResult) : VerifyEmailState()
+        data class Error(val message: String) : VerifyEmailState()
+    }
+
     sealed class ChangePhoneState {
         data object Initial : ChangePhoneState()
         data object Loading : ChangePhoneState()
