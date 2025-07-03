@@ -268,8 +268,8 @@ class RegisterViewModel @Inject constructor(
     }
 
     sealed class RegisterState {
-        object Initial : RegisterState()
-        object Loading : RegisterState()
+        data object Initial : RegisterState()
+        data object Loading : RegisterState()
         data class Success(val user: RegisterResult) : RegisterState()
         data class Error(val message: String) : RegisterState()
     }

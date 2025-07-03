@@ -4,10 +4,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodolfo.itaxcix.data.local.PreferencesManager
-import com.rodolfo.itaxcix.domain.model.GetProfilePhotoResult
+import com.rodolfo.itaxcix.data.remote.dto.driver.DriverToCitizenRequestDTO
+import com.rodolfo.itaxcix.domain.model.ProfileInformationDriverResult
 import com.rodolfo.itaxcix.domain.model.UploadProfilePhotoResult
+import com.rodolfo.itaxcix.domain.repository.DriverRepository
 import com.rodolfo.itaxcix.domain.repository.UserRepository
-import com.rodolfo.itaxcix.utils.ImageUtils
 import com.rodolfo.itaxcix.utils.ImageUtils.compressAndConvertToBase64
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -20,7 +21,8 @@ import javax.inject.Inject
 @HiltViewModel
 class DriverProfileViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val driverRepository: DriverRepository
 ) : ViewModel() {
 
     val userData = preferencesManager.userData
@@ -116,18 +118,98 @@ class DriverProfileViewModel @Inject constructor(
     private fun loadAdditionalProfileData() {
         viewModelScope.launch {
             _isLoading.value = true
-            // Aquí podrías hacer llamadas a la API para obtener datos actualizados
-            // Como información del vehículo, histórico de viajes, etc.
             _isLoading.value = false
         }
     }
 
-    // Estados para la subida de la foto
     sealed class UploadState {
-        object Initial : UploadState()
-        object Loading : UploadState()
+        data object Initial : UploadState()
+        data object Loading : UploadState()
         data class Success(val message: UploadProfilePhotoResult) : UploadState()
-        data class getSuccess(val message: GetProfilePhotoResult) : UploadState()
         data class Error(val message: String) : UploadState()
+    }
+
+    /*
+        Cargar información del perfil del conductor
+        Esta función obtiene la información del perfil del conductor desde el repositorio
+        y actualiza el estado del ViewModel con el resultado.
+     */
+
+    private val _profileInfoState = MutableStateFlow<ProfileInfoState>(ProfileInfoState.Loading)
+    val profileInfoState: StateFlow<ProfileInfoState> = _profileInfoState
+
+    fun loadProfileInformation() {
+        viewModelScope.launch {
+            _profileInfoState.value = ProfileInfoState.Loading
+            try {
+                val userId = userData.value?.id ?: return@launch
+                val profileInfo = driverRepository.profileInformationDriver(userId)
+                _profileInfoState.value = ProfileInfoState.Success(profileInfo)
+            } catch (e: Exception) {
+                _profileInfoState.value = ProfileInfoState.Error(e.message ?: "Error al cargar la información del perfil")
+            }
+        }
+    }
+
+    sealed class ProfileInfoState {
+        data object Loading : ProfileInfoState()
+        data class Success(val profileInfo: ProfileInformationDriverResult) : ProfileInfoState()
+        data class Error(val message: String) : ProfileInfoState()
+    }
+
+    /*
+        Convertir conductor a ciudadano
+        Esta función permite al conductor solicitar la conversión a ciudadano.
+        Se actualiza el estado del ViewModel según el resultado de la operación.
+     */
+
+    // Nuevo estado para driver to citizen
+    private val _driverToCitizenState = MutableStateFlow<DriverToCitizenState>(DriverToCitizenState.Initial)
+    val driverToCitizenState: StateFlow<DriverToCitizenState> = _driverToCitizenState
+
+    fun convertToCitizen() {
+        val userId = userData.value?.id
+        if (userId == null) {
+            _driverToCitizenState.value = DriverToCitizenState.Error("Usuario no encontrado")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _driverToCitizenState.value = DriverToCitizenState.Loading
+
+                val request = DriverToCitizenRequestDTO(userId = userId)
+                val result = driverRepository.driverToCitizen(request)
+
+                Log.d("DriverToCitizen", "Result: $result")
+
+                _driverToCitizenState.value = DriverToCitizenState.Success
+
+                // Mantener el estado de éxito por 2 segundos
+                delay(2000)
+                _driverToCitizenState.value = DriverToCitizenState.Initial
+
+            } catch (e: Exception) {
+                Log.e("DriverToCitizen", "Error converting to citizen: ${e.message}")
+                _driverToCitizenState.value = DriverToCitizenState.Error(
+                    e.message ?: "Error al solicitar conversión a ciudadano"
+                )
+
+                // Mantener el estado de error por 3 segundos
+                delay(3000)
+                _driverToCitizenState.value = DriverToCitizenState.Initial
+            }
+        }
+    }
+
+    fun resetDriverToCitizenState() {
+        _driverToCitizenState.value = DriverToCitizenState.Initial
+    }
+
+    sealed class DriverToCitizenState {
+        data object Initial : DriverToCitizenState()
+        data object Loading : DriverToCitizenState()
+        data object Success : DriverToCitizenState()
+        data class Error(val message: String) : DriverToCitizenState()
     }
 }

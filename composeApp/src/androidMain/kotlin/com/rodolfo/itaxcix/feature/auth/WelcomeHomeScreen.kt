@@ -4,6 +4,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.filled.HelpCenter
+import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,6 +37,7 @@ fun WelcomeHomeScreenPreview() {
 fun WelcomeHomeScreen(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit,
+    onHelpCenterClick: () -> Unit = { }
 ) {
     Scaffold(
         containerColor = Color.White,
@@ -43,6 +49,15 @@ fun WelcomeHomeScreen(
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     )
+                },
+                actions = {
+                    IconButton(onClick = onHelpCenterClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.HelpCenter,
+                            contentDescription = "Centro de Ayuda",
+                            tint = Color.Black
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White,

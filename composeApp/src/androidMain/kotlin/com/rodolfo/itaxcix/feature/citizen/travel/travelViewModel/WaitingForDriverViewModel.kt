@@ -71,6 +71,11 @@ class WaitingForDriverViewModel @Inject constructor(
         }
     }
 
+    fun resetTripResponseState() {
+        citizenWebSocketService.resetTripResponseState()
+        _tripResponseState.value = TripResponseState.Waiting
+    }
+
     sealed class WaitingState {
         data object Initial : WaitingState()
         data object Loading : WaitingState()

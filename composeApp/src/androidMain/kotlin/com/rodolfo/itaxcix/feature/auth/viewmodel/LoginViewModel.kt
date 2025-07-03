@@ -2,6 +2,7 @@ package com.rodolfo.itaxcix.feature.auth.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rodolfo.itaxcix.domain.model.LoginResult
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -96,7 +97,14 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val result = userRepository.login(username, password)
-                _loginState.value = LoginState.Success(result.message, result)
+                val userRoles = result.data.roles.map { it.name }
+
+                // Verificar si tiene múltiples roles
+                if (userRoles.size > 1) {
+                    _loginState.value = LoginState.MultipleRoles(result.data.roles, result)
+                } else {
+                    _loginState.value = LoginState.Success(result.message, result)
+                }
             } catch (e: Exception) {
                 _loginState.value = LoginState.Error(e.message ?: "Error desconocido")
             }
@@ -118,11 +126,11 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-
     // Estados para la pantalla de login
     sealed class LoginState {
         data object Initial : LoginState()
         data object Loading : LoginState()
+        data class MultipleRoles(val roles: List<LoginResult.LoginData.Role>, val user: LoginResult) : LoginState()
         data class Success(val message: String, val user: Any) : LoginState()
         data class Error(val message: String) : LoginState()
     }

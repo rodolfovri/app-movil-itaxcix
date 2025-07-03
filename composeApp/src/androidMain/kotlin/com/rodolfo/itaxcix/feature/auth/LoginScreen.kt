@@ -63,6 +63,7 @@ import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
 import kotlinx.coroutines.delay
 
+
 @Preview
 @Composable
 fun LoginScreenPreview() {
@@ -78,6 +79,7 @@ fun LoginScreen(
     onCitizenLoginSuccess: () -> Unit = { },
     onRegisterClick: () -> Unit = { },
     onRecoveryClick: () -> Unit = { },
+    onRoleSelectionRequired: (List<Int>, List<String>, Any) -> Unit = { _, _, _ -> }
 ) {
 
     val focusManager = LocalFocusManager.current
@@ -106,16 +108,28 @@ fun LoginScreen(
                 )
                 viewModel.onErrorShown()
             }
+            is LoginViewModel.LoginState.MultipleRoles -> {
+                // Extraer IDs y nombres por separado
+                val roleIds = state.roles.map { it.id }
+                val roleNames = state.roles.map { it.name }
+                onRoleSelectionRequired(roleIds, roleNames, state.user)
+            }
             is LoginViewModel.LoginState.Success -> {
                 isSuccessSnackbar = true
                 delay(2000)
                 val loginResult = state.user as LoginResult
-                val user = loginResult.user
+                val userRoleIds = loginResult.data.roles.map { it.id }
 
-                if (user.rol.contains("CONDUCTOR")) {
-                    onDriverLoginSuccess()
-                } else if (user.rol.contains("CIUDADANO")) {
-                    onCitizenLoginSuccess()
+                when {
+                    userRoleIds.contains(2) -> onDriverLoginSuccess() // ID 2 = CONDUCTOR
+                    userRoleIds.contains(1) -> onCitizenLoginSuccess() // ID 1 = CIUDADANO
+                    else -> {
+                        // Rol no reconocido, mostrar error
+                        snackbarHostState.showSnackbar(
+                            message = "Rol de usuario no reconocido",
+                            duration = SnackbarDuration.Short
+                        )
+                    }
                 }
                 viewModel.onSuccessShown()
             }

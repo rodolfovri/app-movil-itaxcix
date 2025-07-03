@@ -45,33 +45,87 @@ class DriverHomeViewModel @Inject constructor(
     val driverHomeState: StateFlow<DriverHomeUiState> = _driverHomeState.asStateFlow()
 
     // Cambia el estado de disponibilidad del conductor
-    fun toggleDriverAvailability() {
-        _driverHomeState.value = DriverHomeUiState.Loading
+//    fun toggleDriverAvailability() {
+//        _driverHomeState.value = DriverHomeUiState.Loading
+//
+//        viewModelScope.launch {
+//            try {
+//                val userId = userData.value?.id ?: 0
+//                val driverStatus = driverRepository.toggleDriverAvailability(userId)
+//
+//                userData.value?.let {
+//                    preferencesManager.saveUserData(
+//                        it.copy(
+//                            isTucActive = driverStatus.hasActiveTuc
+//                        )
+//                    )
+//                }
+//
+//                driverWebSocketService.connect()
+//
+//                if (driverStatus.hasActiveTuc) {
+//                    startLocationUpdates()
+//                } else {
+//                    stopLocationUpdates()
+//                }
+//
+//                _driverHomeState.value = DriverHomeUiState.Success(driverStatus)
+//            } catch (e: Exception) {
+//                _driverHomeState.value = DriverHomeUiState.Error(e.message ?: "Error")
+//            }
+//        }
+//    }
 
-        viewModelScope.launch {
-            try {
-                val userId = userData.value?.id ?: 0
-                val driverStatus = driverRepository.toggleDriverAvailability(userId)
+    fun toggleDriverAvailability(activate: Boolean = true) {
+        if (activate) {
+            // Lógica existente para activar disponibilidad
+            _driverHomeState.value = DriverHomeUiState.Loading
 
+            viewModelScope.launch {
+                try {
+                    val userId = userData.value?.id ?: 0
+                    val driverStatus = driverRepository.toggleDriverAvailability(userId)
+
+                    userData.value?.let {
+                        preferencesManager.saveUserData(
+                            it.copy(
+                                isTucActive = true
+                            )
+                        )
+                    }
+
+                    driverWebSocketService.connect()
+                    startLocationUpdates()
+                    _driverHomeState.value = DriverHomeUiState.Success(driverStatus)
+                } catch (e: Exception) {
+                    _driverHomeState.value = DriverHomeUiState.Error(e.message ?: "Error")
+                }
+            }
+        } else {
+            // Lógica para desactivar disponibilidad
+            viewModelScope.launch {
+                // Desconectar WebSocket
+                driverWebSocketService.logout()
+
+                // Detener actualizaciones de ubicación
+                stopLocationUpdates()
+
+                // Actualizar estado en preferencias
                 userData.value?.let {
                     preferencesManager.saveUserData(
                         it.copy(
-                            isTucActive = driverStatus.hasActiveTuc
+                            isTucActive = false
                         )
                     )
                 }
 
-                driverWebSocketService.connect()
-
-                if (driverStatus.hasActiveTuc) {
-                    startLocationUpdates()
-                } else {
-                    stopLocationUpdates()
-                }
-
-                _driverHomeState.value = DriverHomeUiState.Success(driverStatus)
-            } catch (e: Exception) {
-                _driverHomeState.value = DriverHomeUiState.Error(e.message ?: "Error")
+                // Notificar éxito en la UI
+                _driverHomeState.value = DriverHomeUiState.Success(
+                    DriverAvailabilityResult(
+                        hasActiveTuc = false,
+                        message = "Disponibilidad desactivada con éxito"
+                    )
+                )
             }
         }
     }

@@ -46,7 +46,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun DashboardCitizenScreenPreview() {
     DashboardCitizenScreen(
-        onLogout = {}
+        onLogout = {},
+        onNavigateToRideRequest = {},
+        onNavigateToPersonalInfo = {}
     )
 }
 
@@ -61,8 +63,13 @@ object CitizenRoutes {
 fun DashboardCitizenScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     onLogout: () -> Unit = {},
-    onNavigateToRideRequest: (InitialDriversResponse.DriverInfo) -> Unit = {}
-
+    onNavigateToRideRequest: (InitialDriversResponse.DriverInfo) -> Unit = {},
+    onNavigateToPersonalInfo: () -> Unit,
+    onNavigateToChangeEmail: () -> Unit = {},
+    onNavigateToChangePhone: () -> Unit = {},
+    onNavigateToTravelDetail: (Int, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
+    onNavigateToDriverRatings: (InitialDriversResponse.DriverInfo) -> Unit = {},
+    onNavigateToCitizenToDriver: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val navController = rememberNavController()
@@ -157,7 +164,14 @@ fun DashboardCitizenScreen(
                 Column(modifier = Modifier.padding(padding)) {
                     CitizenNavHost(
                         navController = navController,
-                        onNavigateToRideRequest = onNavigateToRideRequest)
+                        onNavigateToRideRequest = onNavigateToRideRequest,
+                        onNavigateToPersonalInfo = onNavigateToPersonalInfo,
+                        onNavigateToChangeEmail = onNavigateToChangeEmail,
+                        onNavigateToChangePhone = onNavigateToChangePhone,
+                        onNavigateToTravelDetail = onNavigateToTravelDetail,
+                        onNavigateToDriverRatings = onNavigateToDriverRatings,
+                        onNavigateToCitizenToDriver = onNavigateToCitizenToDriver
+                    )
                 }
             }
         )
@@ -188,7 +202,14 @@ fun DashboardCitizenScreen(
 @Composable
 fun CitizenNavHost(
     navController: NavHostController,
-    onNavigateToRideRequest: (InitialDriversResponse.DriverInfo) -> Unit = {}
+    onNavigateToRideRequest: (InitialDriversResponse.DriverInfo) -> Unit = {},
+    onNavigateToPersonalInfo: () -> Unit = {},
+    onNavigateToChangeEmail: () -> Unit = {},
+    onNavigateToChangePhone: () -> Unit = {},
+    onNavigateToTravelDetail: (Int, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
+    onNavigateToDriverRatings: (InitialDriversResponse.DriverInfo) -> Unit = {},
+    onNavigateToCitizenToDriver: () -> Unit = {}
+
 ) {
     NavHost(
         navController = navController,
@@ -196,14 +217,22 @@ fun CitizenNavHost(
     ) {
         composable(CitizenRoutes.HOME) {
             CitizenHomeScreen(
-                onNavigateToRideRequest = onNavigateToRideRequest
+                onNavigateToRideRequest = onNavigateToRideRequest,
+                onNavigateToDriverRatings = onNavigateToDriverRatings
             )
         }
         composable(CitizenRoutes.PROFILE) {
-            CitizenProfileScreen()
+            CitizenProfileScreen(
+                onNavigateToPersonalInfo = onNavigateToPersonalInfo,
+                onNavigateToChangeEmail = onNavigateToChangeEmail,
+                onNavigateToChangePhone = onNavigateToChangePhone,
+                onNavigateToCitizenToDriver = onNavigateToCitizenToDriver
+            )
         }
         composable(CitizenRoutes.HISTORY) {
-            CitizenHistoryScreen()
+            CitizenHistoryScreen(
+                onNavigateToTravelDetail = onNavigateToTravelDetail
+            )
         }
     }
 }

@@ -7,8 +7,16 @@ import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateBiometricRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateDocumentRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateVehicleRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangeEmailRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangePhoneRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangeEmailRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangePhoneRequestDTO
+import com.rodolfo.itaxcix.domain.model.ChangeEmailResult
+import com.rodolfo.itaxcix.domain.model.ChangePhoneResult
 import com.rodolfo.itaxcix.domain.model.GetProfilePhotoResult
+import com.rodolfo.itaxcix.domain.model.HelpCenterResult
 import com.rodolfo.itaxcix.domain.model.LoginResult
+import com.rodolfo.itaxcix.domain.model.RatingsCommentsResult
 import com.rodolfo.itaxcix.domain.model.RecoveryResult
 import com.rodolfo.itaxcix.domain.model.RegisterDriverResult
 import com.rodolfo.itaxcix.domain.model.RegisterResult
@@ -19,6 +27,8 @@ import com.rodolfo.itaxcix.domain.model.User
 import com.rodolfo.itaxcix.domain.model.ValidateBiometricResult
 import com.rodolfo.itaxcix.domain.model.ValidateDocumentResult
 import com.rodolfo.itaxcix.domain.model.ValidateVehicleResult
+import com.rodolfo.itaxcix.domain.model.VerifyChangeEmailResult
+import com.rodolfo.itaxcix.domain.model.VerifyChangePhoneResult
 import com.rodolfo.itaxcix.domain.model.VerifyCodeRegisterResult
 import com.rodolfo.itaxcix.domain.model.VerifyCodeResult
 
@@ -38,4 +48,10 @@ interface UserRepository {
     suspend fun resetPassword(userId: Int, newPassword: String, repeatPassword: String, token: String): ResetPasswordResult
     suspend fun getProfilePhoto(userId: Int): GetProfilePhotoResult
     suspend fun uploadProfilePhoto(userId: Int, base64Image: String): UploadProfilePhotoResult
+    suspend fun changeEmail(changeEmail: ChangeEmailRequestDTO): ChangeEmailResult
+    suspend fun verifyChangeEmail(verifyChange: VerifyChangeEmailRequestDTO): VerifyChangeEmailResult
+    suspend fun changePhone(changePhone: ChangePhoneRequestDTO): ChangePhoneResult
+    suspend fun verifyChangePhone(verifyChange: VerifyChangePhoneRequestDTO): VerifyChangePhoneResult
+    suspend fun helpCenter(): HelpCenterResult
+    suspend fun getRatingCommentsUser(userId: Int): RatingsCommentsResult
 }

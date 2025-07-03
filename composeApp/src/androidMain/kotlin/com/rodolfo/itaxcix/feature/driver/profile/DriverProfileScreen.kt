@@ -1,7 +1,5 @@
 package com.rodolfo.itaxcix.feature.driver.profile
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -29,24 +27,21 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.StarHalf
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarOutline
-import androidx.compose.material.icons.outlined.DirectionsCar
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.LocationCity
-import androidx.compose.material.icons.outlined.Payment
+import androidx.compose.material.icons.outlined.ChangeCircle
+import androidx.compose.material.icons.outlined.ContactMail
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.Phone
-import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -57,8 +52,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -69,7 +62,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toFile
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rodolfo.itaxcix.R
 import com.rodolfo.itaxcix.data.local.UserData
@@ -78,6 +70,12 @@ import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
 import com.rodolfo.itaxcix.utils.ImageUtils
 import kotlinx.coroutines.launch
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 @Preview
 @Composable
@@ -87,9 +85,13 @@ fun DriverProfileScreenPreview() {
 
 @Composable
 fun DriverProfileScreen(
-    viewModel: DriverProfileViewModel = hiltViewModel()
+    viewModel: DriverProfileViewModel = hiltViewModel(),
+    onNavigateToPersonalInfo: () -> Unit = { },
+    onNavigateToChangeEmail: () -> Unit = { },
+    onNavigateToChangePhone: () -> Unit = { },
 ) {
     val userData by viewModel.userData.collectAsState()
+    val driverToCitizenState by viewModel.driverToCitizenState.collectAsState()
     val uploadState by viewModel.uploadState.collectAsState()
     val isLoadingProfileImage by viewModel.isLoadingProfileImage.collectAsState()
     val context = LocalContext.current
@@ -97,6 +99,27 @@ fun DriverProfileScreen(
 
     val isLoading = uploadState is DriverProfileViewModel.UploadState.Loading
     val isSuccess = uploadState is DriverProfileViewModel.UploadState.Success
+
+    val isDTCLoading = driverToCitizenState is DriverProfileViewModel.DriverToCitizenState.Loading
+    val isDTCSuccess = driverToCitizenState is DriverProfileViewModel.DriverToCitizenState.Success
+
+    // Estados para el Snackbar
+    val snackbarHostState = remember { SnackbarHostState() }
+    var isSuccessSnackbar by remember { mutableStateOf(false) }
+
+    // Efecto para mostrar Snackbar cuando hay error en driver to citizen
+    LaunchedEffect(key1 = driverToCitizenState) {
+        when (val state = driverToCitizenState) {
+            is DriverProfileViewModel.DriverToCitizenState.Error -> {
+                isSuccessSnackbar = false
+                snackbarHostState.showSnackbar(
+                    message = state.message,
+                    duration = SnackbarDuration.Long
+                )
+            }
+            else -> {}
+        }
+    }
 
     // Lanzador para seleccionar imagen de la galería
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -110,35 +133,87 @@ fun DriverProfileScreen(
                     viewModel.uploadProfilePhoto(tempFile)
                 } catch (e: Exception) {
                     Log.e("DriverProfile", "Error al procesar imagen: ${e.message}")
-                    // Opcional: Mostrar error al usuario
                 }
             }
         }
     }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ITaxCixPaletaColors.Background)
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-    ) {
-        ProfileHeader(
-            userData = userData,
-            isLoadingProfileImage = isLoadingProfileImage,
-            onImageClick = { galleryLauncher.launch("image/*") }
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        MenuButtons()
-    }
 
-    ITaxCixProgressRequest(
-        isVisible = isLoading || isSuccess,
-        isSuccess = isSuccess,
-        loadingTitle = "Subiendo foto",
-        successTitle = "¡Foto actualizada!",
-        loadingMessage = "Estamos procesando tu nueva foto de perfil...",
-        successMessage = "Tu foto de perfil ha sido actualizada correctamente"
-    )
+
+
+    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+        Scaffold(
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState) { data ->
+                    Snackbar(
+                        modifier = Modifier.padding(16.dp),
+                        containerColor = if (isSuccessSnackbar) Color(0xFF4CAF50) else Color(0xFFD32F2F),
+                        contentColor = Color.White,
+                        dismissAction = {
+                            IconButton(onClick = { data.dismiss() }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cerrar",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isSuccessSnackbar) Icons.Default.Check else Icons.Default.Error,
+                                contentDescription = if (isSuccessSnackbar) "Éxito" else "Error",
+                                tint = Color.White,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            Text(text = data.visuals.message)
+                        }
+                    }
+                }
+            },
+            containerColor = ITaxCixPaletaColors.Background
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
+                ProfileHeader(
+                    userData = userData,
+                    isLoadingProfileImage = isLoadingProfileImage,
+                    onImageClick = { galleryLauncher.launch("image/*") }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                MenuButtons(
+                    onNavigateToPersonalInfo = onNavigateToPersonalInfo,
+                    onNavigateToChangeEmail = onNavigateToChangeEmail,
+                    onNavigateToChangePhone = onNavigateToChangePhone,
+                    onConvertToCitizen = { viewModel.convertToCitizen() }
+                )
+            }
+        }
+
+        // Progress para la carga de imagen de perfil
+        ITaxCixProgressRequest(
+            isVisible = isLoading || isSuccess,
+            isSuccess = isSuccess,
+            loadingTitle = "Subiendo foto",
+            successTitle = "¡Foto actualizada!",
+            loadingMessage = "Estamos procesando tu nueva foto de perfil...",
+            successMessage = "Tu foto de perfil ha sido actualizada correctamente"
+        )
+
+        // Progress para driver to citizen
+        ITaxCixProgressRequest(
+            isVisible = isDTCLoading || isDTCSuccess,
+            isSuccess = isDTCSuccess,
+            loadingTitle = "Procesando solicitud",
+            successTitle = "¡Solicitud enviada!",
+            loadingMessage = "Estamos procesando tu solicitud para convertirte en ciudadano...",
+            successMessage = "Tu solicitud ha sido enviada correctamente. Te notificaremos cuando sea aprobada."
+        )
+    }
 }
 
 @Composable
@@ -265,7 +340,12 @@ private fun DefaultProfileImage(onImageClick: () -> Unit) {
 }
 
 @Composable
-private fun MenuButtons() {
+private fun MenuButtons(
+    onNavigateToPersonalInfo: () -> Unit = { },
+    onNavigateToChangeEmail: () -> Unit = { },
+    onNavigateToChangePhone: () -> Unit = { },
+    onConvertToCitizen: () -> Unit = { }
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -273,32 +353,28 @@ private fun MenuButtons() {
         MenuButton(
             icon = Icons.Outlined.Person,
             title = "Información Personal",
-            onClick = { /* Navegar a información personal */ }
+            onClick = { onNavigateToPersonalInfo() }
         )
 
         MenuButton(
-            icon = Icons.Outlined.PersonAdd,
-            title = "Cambiar de Contacto",
-            onClick = { /* Navegar a cambiar contacto */ }
+            icon = Icons.Outlined.ContactMail,
+            title = "Cambiar de Correo Electrónico",
+            onClick = { onNavigateToChangeEmail() }
         )
 
         MenuButton(
-            icon = Icons.Outlined.DirectionsCar,
-            title = "Cambiar de Carro",
-            onClick = { /* Navegar a cambiar carro */ }
+            icon = Icons.Outlined.Phone,
+            title = "Cambiar de Teléfono",
+            onClick = { onNavigateToChangePhone() },
         )
 
+        // MenuButton para obtener el rol de ciudadano
         MenuButton(
-            icon = Icons.Outlined.Favorite,
-            title = "Tus Favoritos",
-            onClick = { /* Navegar a favoritos */ }
+            icon = Icons.Outlined.ChangeCircle,
+            title = "Convertirse en Ciudadano",
+            onClick = { onConvertToCitizen() }
         )
 
-        MenuButton(
-            icon = Icons.Outlined.Payment,
-            title = "Método de Pago",
-            onClick = { /* Navegar a métodos de pago */ }
-        )
     }
 }
 

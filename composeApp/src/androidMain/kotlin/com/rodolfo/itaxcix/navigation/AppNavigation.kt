@@ -15,14 +15,18 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.rodolfo.itaxcix.data.remote.dto.websockets.InitialDriversResponse
 import com.rodolfo.itaxcix.data.remote.dto.websockets.TripRequestMessage
+import com.rodolfo.itaxcix.domain.model.LoginResult
+import com.rodolfo.itaxcix.feature.auth.HelpCenterScreen
 import com.rodolfo.itaxcix.feature.auth.LoginScreen
 import com.rodolfo.itaxcix.feature.auth.RecoveryScreen
 import com.rodolfo.itaxcix.feature.auth.RegisterOptionsScreen
 import com.rodolfo.itaxcix.feature.auth.ResetPasswordScreen
+import com.rodolfo.itaxcix.feature.auth.RoleSelectionScreen
 import com.rodolfo.itaxcix.feature.auth.VerifyCodeRegisterScreen
 import com.rodolfo.itaxcix.feature.auth.VerifyCodeScreen
 import com.rodolfo.itaxcix.feature.auth.WelcomeHomeScreen
 import com.rodolfo.itaxcix.feature.auth.viewmodel.CameraValidationViewModel
+import com.rodolfo.itaxcix.feature.auth.viewmodel.HelpCenterViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.LoginViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.RecoveryViewModel
 import com.rodolfo.itaxcix.feature.auth.viewmodel.RegisterViewModel
@@ -33,13 +37,30 @@ import com.rodolfo.itaxcix.feature.citizen.CameraValidationScreen
 import com.rodolfo.itaxcix.feature.citizen.dashboard.DashboardCitizenScreen
 import com.rodolfo.itaxcix.feature.citizen.RegisterCitizenScreen
 import com.rodolfo.itaxcix.feature.citizen.RegisterValidationCitizenScreen
+import com.rodolfo.itaxcix.feature.citizen.history.CitizenTravelDetailScreen
+import com.rodolfo.itaxcix.feature.citizen.home.DriverRatingsScreen
+import com.rodolfo.itaxcix.feature.citizen.profile.CitizenChangeEmailScreen
+import com.rodolfo.itaxcix.feature.citizen.profile.CitizenChangePhoneScreen
+import com.rodolfo.itaxcix.feature.citizen.profile.CitizenToDriverScreen
+import com.rodolfo.itaxcix.feature.citizen.profile.PersonalInformationScreen
+import com.rodolfo.itaxcix.feature.citizen.profile.citizenProfileViewModel.CitizenContactViewModel
+import com.rodolfo.itaxcix.feature.citizen.profile.citizenProfileViewModel.CitizenProfileViewModel
 import com.rodolfo.itaxcix.feature.citizen.travel.CitizenTripScreen
 import com.rodolfo.itaxcix.feature.citizen.travel.RideRequestScreen
 import com.rodolfo.itaxcix.feature.citizen.travel.WaitingForDriverScreen
+import com.rodolfo.itaxcix.feature.citizen.travel.travelViewModel.CitizenTripViewModel
 import com.rodolfo.itaxcix.feature.driver.CameraValidationDriverScreen
 import com.rodolfo.itaxcix.feature.driver.dashboard.DashboardDriverScreen
 import com.rodolfo.itaxcix.feature.driver.RegisterDriverScreen
 import com.rodolfo.itaxcix.feature.driver.RegisterValidationDriverScreen
+import com.rodolfo.itaxcix.feature.driver.history.DriverTravelDetailScreen
+import com.rodolfo.itaxcix.feature.driver.home.CitizenRatingsScreen
+import com.rodolfo.itaxcix.feature.driver.profile.DriverChangeEmailScreen
+import com.rodolfo.itaxcix.feature.driver.profile.DriverChangePhoneScreen
+import com.rodolfo.itaxcix.feature.driver.profile.PersonalInformationDriverScreen
+import com.rodolfo.itaxcix.feature.driver.profile.driverProfileViewModel.DriverContactViewModel
+import com.rodolfo.itaxcix.feature.driver.profile.driverProfileViewModel.DriverProfileViewModel
+import com.rodolfo.itaxcix.feature.driver.travel.DriverTripGoingScreen
 import com.rodolfo.itaxcix.feature.driver.travel.DriverTripInProgressScreen
 import com.rodolfo.itaxcix.feature.driver.viewModel.AuthViewModel
 import com.rodolfo.itaxcix.feature.driver.viewModel.CameraValidationDriverViewModel
@@ -51,7 +72,9 @@ import kotlinx.coroutines.launch
 
 object Routes {
     const val WELCOME = "welcome"
+    const val HELP_CENTER = "help_center"
     const val LOGIN = "login"
+    const val ROLE_SELECTION = "role_selection/{roleIds}/{roleNames}"
     const val RECOVERY = "recovery"
     const val VERIFY_CODE = "verify_code/{contactTypeId}/{contact}/{userId}"
     const val RESET_PASSWORD = "reset_password/{userId}/{token}"
@@ -71,6 +94,26 @@ object Routes {
     const val DRIVER_TRIP_IN_PROGRESS = "driver_trip_in_progress/{tripId}/{passengerId}/{originLat}/{originLng}/{destLat}/{destLng}/{passengerName}/{passengerRating}"
     const val WAITING_FOR_DRIVER = "waiting_for_driver/{tripId}/{driverName}"
     const val CITIZEN_TRIP_IN_PROGRESS = "citizen_trip_in_progress/{tripId}/{driverId}/{driverName}"
+
+    const val PERSONAL_INFORMATION_CITIZEN = "personal_information_citizen"
+    const val PERSONAL_INFORMATION_DRIVER = "personal_information_driver"
+
+    const val CHANGE_EMAIL_CITIZEN = "change_email_citizen"
+    const val CHANGE_PHONE_CITIZEN = "change_phone_citizen"
+
+    const val CHANGE_EMAIL_DRIVER = "change_email_driver"
+    const val CHANGE_PHONE_DRIVER = "change_phone_driver"
+
+    const val DRIVER_TRIP_GOING = "driver_trip_going/{tripId}/{passengerId}"
+
+    const val CITIZEN_TRAVEL_DETAIL = "citizen_travel_detail/{travelId}/{origin}/{destination}/{status}/{startDate}"
+    const val DRIVER_TRAVEL_DETAIL = "driver_travel_detail/{travelId}/{origin}/{destination}/{status}/{startDate}"
+
+    const val DRIVER_RATINGS = "driver_ratings/{driverId}/{driverName}"
+    const val CITIZEN_RATINGS = "citizen_ratings/{citizenId}/{citizenName}"
+
+    const val CITIZEN_TO_DRIVER = "citizen_to_driver"
+
 }
 
 @Composable
@@ -116,7 +159,18 @@ fun AppNavigation(
         ) {
             WelcomeHomeScreen(
                 onLoginClick = { navController.navigate(Routes.LOGIN) },
-                onRegisterClick = { navController.navigate(Routes.REGISTER_OPTIONS) }
+                onRegisterClick = { navController.navigate(Routes.REGISTER_OPTIONS) },
+                onHelpCenterClick = { navController.navigate(Routes.HELP_CENTER) }
+            )
+        }
+
+
+        composable(Routes.HELP_CENTER) {
+            val viewModel = hiltViewModel<HelpCenterViewModel>()
+
+            HelpCenterScreen(
+                viewModel = viewModel,
+                onBackPressed = { navController.popBackStack() }
             )
         }
 
@@ -144,7 +198,61 @@ fun AppNavigation(
                     }
                 },
                 onRegisterClick = { navController.navigate(Routes.REGISTER_OPTIONS) },
-                onRecoveryClick = { navController.navigate(Routes.RECOVERY) }
+                onRecoveryClick = { navController.navigate(Routes.RECOVERY) },
+                onRoleSelectionRequired = { roleIds, roleNames, user ->
+                    // Convertir las listas a strings separados por comas
+                    val roleIdsString = roleIds.joinToString(",")
+                    val roleNamesString = roleNames.joinToString(",")
+                    navController.navigate("role_selection/$roleIdsString/$roleNamesString")
+                }
+            )
+        }
+
+        // En AppNavigation, agregar el composable para role selection
+        composable(
+            route = Routes.ROLE_SELECTION,
+            arguments = listOf(
+                navArgument("roleIds") { type = NavType.StringType },
+                navArgument("roleNames") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val roleIdsString = backStackEntry.arguments?.getString("roleIds") ?: ""
+            val roleNamesString = backStackEntry.arguments?.getString("roleNames") ?: ""
+
+            val roleIds = if (roleIdsString.isNotEmpty()) {
+                roleIdsString.split(",").mapNotNull { it.toIntOrNull() }
+            } else emptyList()
+
+            val roleNames = if (roleNamesString.isNotEmpty()) {
+                roleNamesString.split(",")
+            } else emptyList()
+
+            // Reconstruir los objetos Role con ID y nombre
+            val roles = roleIds.zip(roleNames) { id, name ->
+                LoginResult.LoginData.Role(id, name)
+            }
+
+            RoleSelectionScreen(
+                roles = roles,
+                onRoleSelected = { selectedRole ->
+                    // Ahora tienes acceso tanto al ID como al nombre
+                    when (selectedRole.id) {
+                        2 -> { // ID 2 = CONDUCTOR
+                            navController.navigate(Routes.DASHBOARD_DRIVER) {
+                                popUpTo(Routes.WELCOME) { inclusive = true }
+                            }
+                        }
+                        1 -> { // ID 1 = CIUDADANO
+                            navController.navigate(Routes.DASHBOARD_CITIZEN) {
+                                popUpTo(Routes.WELCOME) { inclusive = true }
+                            }
+                        }
+                        else -> {
+
+                        }
+                    }
+                },
+                onBackClick = { navController.popBackStack() }
             )
         }
 
@@ -273,6 +381,34 @@ fun AppNavigation(
                     navController.navigate(
                         "ride_request/${driver.id}/${driver.fullName}/${driver.location.lat}/${driver.location.lng}/${driver.rating}"
                     )
+                },
+                onNavigateToPersonalInfo = {
+                    navController.navigate(Routes.PERSONAL_INFORMATION_CITIZEN)
+                },
+                onNavigateToChangeEmail = {
+                    navController.navigate(Routes.CHANGE_EMAIL_CITIZEN)
+                },
+                onNavigateToChangePhone = {
+                    navController.navigate(Routes.CHANGE_PHONE_CITIZEN)
+                },
+                onNavigateToTravelDetail = { travelId, origin, destination, status, startDate ->
+                    navController.navigate(
+                        "citizen_travel_detail/$travelId/$origin/$destination/$status/$startDate"
+                    )
+                },
+                onNavigateToDriverRatings = { tripData ->
+                    val formattedDriverName = tripData.fullName.replace(" ", "_")
+
+                    navController.navigate(
+                        "driver_ratings/${tripData.id}/$formattedDriverName"
+                    ) {
+                        popUpTo(Routes.DASHBOARD_CITIZEN) { inclusive = false }
+                    }
+                },
+                onNavigateToCitizenToDriver = {
+                    navController.navigate(Routes.CITIZEN_TO_DRIVER) {
+                        popUpTo(Routes.DASHBOARD_CITIZEN) { inclusive = false }
+                    }
                 }
             )
         }
@@ -287,6 +423,37 @@ fun AppNavigation(
                 onLogout = {
                     navController.navigate(Routes.LOGIN) {
                         popUpTo(Routes.WELCOME) { inclusive = false }
+                    }
+                },
+                onNavigateToPersonalInfo = {
+                    navController.navigate(Routes.PERSONAL_INFORMATION_DRIVER)
+                },
+                onNavigateToChangeEmail = {
+                    navController.navigate(Routes.CHANGE_EMAIL_DRIVER)
+                },
+                onNavigateToChangePhone = {
+                    navController.navigate(Routes.CHANGE_PHONE_DRIVER)
+                },
+                onNavigateToTravelDetail = { travelId, origin, destination, status, startDate ->
+                    navController.navigate(
+                        "driver_travel_detail/$travelId/$origin/$destination/$status/$startDate"
+                    )
+                },
+                onNavigateToTripInProgress = { tripData ->
+                    val formattedPassengerName = tripData.passengerName.replace(" ", "_")
+
+                    navController.navigate(
+                        "driver_trip_in_progress/${tripData.tripId}/${tripData.passengerId}/${tripData.origin.lat}/${tripData.origin.lng}/${tripData.destination.lat}/${tripData.destination.lng}/$formattedPassengerName/${tripData.passengerRating}"
+                    ) {
+                        popUpTo(Routes.DASHBOARD_DRIVER) { inclusive = true }
+                    }
+                },
+                onNavigateToCitizenRatings = { citizenId, citizenName ->
+                    val formattedCitizenName = citizenName.replace(" ", "_")
+                    navController.navigate(
+                        "citizen_ratings/$citizenId/$formattedCitizenName"
+                    ) {
+                        popUpTo(Routes.DASHBOARD_DRIVER) { inclusive = false }
                     }
                 }
             )
@@ -484,7 +651,19 @@ fun AppNavigation(
             )
 
             DriverTripInProgressScreen(
-                driverTrip = trip
+                driverTrip = trip,
+                onNavigateBack = {
+                    navController.navigate(Routes.DASHBOARD_DRIVER) {
+                        popUpTo(Routes.DASHBOARD_DRIVER) { inclusive = true }
+                    }
+                },
+                onNavigateToTripGoing = { tripId, passengerId ->
+                    navController.navigate(
+                        "driver_trip_going/$tripId/$passengerId"
+                    ) {
+                        popUpTo(Routes.DASHBOARD_DRIVER) { inclusive = true }
+                    }
+                },
             )
         }
 
@@ -528,6 +707,8 @@ fun AppNavigation(
             val driverId = backStackEntry.arguments?.getInt("driverId") ?: 0
             val driverName = backStackEntry.arguments?.getString("driverName") ?: ""
 
+            val tripViewModel = hiltViewModel<CitizenTripViewModel>()
+
             CitizenTripScreen(
                 tripId = tripId,
                 driverId = driverId,
@@ -538,7 +719,195 @@ fun AppNavigation(
                             inclusive = false
                         }
                     }
-                }
+                },
+                citizenWebSocketService = tripViewModel.citizenWebSocketService
+
+            )
+        }
+
+        composable(Routes.PERSONAL_INFORMATION_CITIZEN) {
+            val viewModel = hiltViewModel<CitizenProfileViewModel>()
+
+            PersonalInformationScreen(
+                viewModel = viewModel,
+                onBackPressed = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.PERSONAL_INFORMATION_DRIVER) {
+            val viewModel = hiltViewModel<DriverProfileViewModel>()
+
+            PersonalInformationDriverScreen(
+                viewModel = viewModel,
+                onBackPressed = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.CHANGE_EMAIL_CITIZEN) {
+            val viewModel = hiltViewModel<CitizenContactViewModel>()
+
+
+            CitizenChangeEmailScreen(
+                viewModel = viewModel,
+                onBackPressed = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.CHANGE_PHONE_CITIZEN) {
+            val viewModel = hiltViewModel<CitizenContactViewModel>()
+
+            CitizenChangePhoneScreen(
+                viewModel = viewModel,
+                onBackPressed = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.CHANGE_EMAIL_DRIVER) {
+            val viewModel = hiltViewModel<DriverContactViewModel>()
+
+            DriverChangeEmailScreen(
+                viewModel = viewModel,
+                onBackPressed = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.CHANGE_PHONE_DRIVER) {
+            val viewModel = hiltViewModel<DriverContactViewModel>()
+
+            DriverChangePhoneScreen(
+                viewModel = viewModel,
+                onBackPressed = { navController.popBackStack() }
+            )
+        }
+
+        // Agregar aquí el nuevo composable
+        composable(Routes.CITIZEN_TO_DRIVER) {
+            val viewModel = hiltViewModel<CitizenProfileViewModel>()
+
+            CitizenToDriverScreen(
+                viewModel = viewModel,
+                onBackPressed = { navController.popBackStack() },
+                onSuccess = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Routes.DRIVER_TRIP_GOING,
+            arguments = listOf(
+                navArgument("tripId") { type = NavType.IntType },
+                navArgument("passengerId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val tripId = backStackEntry.arguments?.getInt("tripId") ?: 0
+            val passengerId = backStackEntry.arguments?.getInt("passengerId") ?: 0
+
+            DriverTripGoingScreen(
+                tripId = tripId,
+                passengerId = passengerId,
+                onNavigateToHome = {
+                    navController.navigate(Routes.DASHBOARD_DRIVER) {
+                        popUpTo(Routes.DASHBOARD_DRIVER) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable(
+            route = Routes.CITIZEN_TRAVEL_DETAIL,
+            arguments = listOf(
+                navArgument("travelId") { type = NavType.IntType },
+                navArgument("origin") { type = NavType.StringType },
+                navArgument("destination") { type = NavType.StringType },
+                navArgument("status") { type = NavType.StringType },
+                navArgument("startDate") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val travelId = backStackEntry.arguments?.getInt("travelId") ?: 0
+            val origin = backStackEntry.arguments?.getString("origin") ?: ""
+            val destination = backStackEntry.arguments?.getString("destination") ?: ""
+            val status = backStackEntry.arguments?.getString("status") ?: ""
+            val startDate = backStackEntry.arguments?.getString("startDate") ?: ""
+
+            CitizenTravelDetailScreen(
+                travelId = travelId,
+                origin = origin,
+                destination = destination,
+                status = status,
+                startDate = startDate,
+                onBackPressed = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Routes.DRIVER_TRAVEL_DETAIL,
+            arguments = listOf(
+                navArgument("travelId") { type = NavType.IntType },
+                navArgument("origin") { type = NavType.StringType },
+                navArgument("destination") { type = NavType.StringType },
+                navArgument("status") { type = NavType.StringType },
+                navArgument("startDate") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val travelId = backStackEntry.arguments?.getInt("travelId") ?: 0
+            val origin = backStackEntry.arguments?.getString("origin") ?: ""
+            val destination = backStackEntry.arguments?.getString("destination") ?: ""
+            val status = backStackEntry.arguments?.getString("status") ?: ""
+            val startDate = backStackEntry.arguments?.getString("startDate") ?: ""
+
+            DriverTravelDetailScreen(
+                travelId = travelId,
+                origin = origin,
+                destination = destination,
+                status = status,
+                startDate = startDate,
+                onBackPressed = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Routes.DRIVER_RATINGS,
+            arguments = listOf(
+                navArgument("driverId") { type = NavType.IntType },
+                navArgument("driverName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val driverId = backStackEntry.arguments?.getInt("driverId") ?: 0
+            val driverName = backStackEntry.arguments?.getString("driverName") ?: ""
+
+            val driver = InitialDriversResponse.DriverInfo(
+                id = driverId,
+                fullName = driverName.replace("_", " "),
+                image = "",
+                location = InitialDriversResponse.Location(
+                    lat = 0.0,
+                    lng = 0.0
+                ),
+                rating = 0.0,
+                timestamp = System.currentTimeMillis()
+            )
+
+            DriverRatingsScreen(
+                driver = driver,
+                onBackClick = {
+                    navController.popBackStack(Routes.DASHBOARD_CITIZEN, inclusive = false)
+                },
+            )
+        }
+
+        composable(
+            route = Routes.CITIZEN_RATINGS,
+            arguments = listOf(
+                navArgument("citizenId") { type = NavType.IntType },
+                navArgument("citizenName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val citizenId = backStackEntry.arguments?.getInt("citizenId") ?: 0
+            val citizenName = backStackEntry.arguments?.getString("citizenName") ?: ""
+
+            CitizenRatingsScreen(
+                citizenId = citizenId,
+                citizenName = citizenName.replace("_", " "),
+                onBackClick = { navController.popBackStack() }
             )
         }
     }

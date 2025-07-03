@@ -26,12 +26,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.outlined.Favorite
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Payment
+import androidx.compose.material.icons.filled.ChangeCircle
+import androidx.compose.material.icons.outlined.ChangeCircle
+import androidx.compose.material.icons.outlined.ContactMail
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -72,7 +71,11 @@ fun CitizenProfileScreenPreview() {
 
 @Composable
 fun CitizenProfileScreen(
-    viewModel: CitizenProfileViewModel = hiltViewModel()
+    viewModel: CitizenProfileViewModel = hiltViewModel(),
+    onNavigateToPersonalInfo: () -> Unit = { },
+    onNavigateToChangeEmail: () -> Unit = { },
+    onNavigateToChangePhone: () -> Unit = { },
+    onNavigateToCitizenToDriver: () -> Unit = { }
 ) {
     val userData by viewModel.userData.collectAsState()
     val uploadState by viewModel.uploadState.collectAsState()
@@ -112,7 +115,12 @@ fun CitizenProfileScreen(
             onImageClick = { galleryLauncher.launch("image/*") }
         )
         Spacer(modifier = Modifier.height(24.dp))
-        MenuButtons()
+        MenuButtons(
+            onNavigateToPersonalInfo = onNavigateToPersonalInfo,
+            onNavigateToChangeEmail = onNavigateToChangeEmail,
+            onNavigateToChangePhone = onNavigateToChangePhone,
+            onNavigateToCitizenToDriver = onNavigateToCitizenToDriver
+        )
     }
 
     ITaxCixProgressRequest(
@@ -240,45 +248,38 @@ private fun DefaultProfileImage(onImageClick: () -> Unit) {
 }
 
 @Composable
-private fun MenuButtons() {
+private fun MenuButtons(
+    onNavigateToPersonalInfo: () -> Unit = { },
+    onNavigateToChangeEmail: () -> Unit = { },
+    onNavigateToChangePhone: () -> Unit = { },
+    onNavigateToCitizenToDriver: () -> Unit = { }
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         MenuButton(
             icon = Icons.Outlined.Person,
-            title = "Datos Personales",
-            onClick = { /* Navegar a información personal */ }
+            title = "Información Personal",
+            onClick = { onNavigateToPersonalInfo() },
         )
 
         MenuButton(
-            icon = Icons.Outlined.LocationOn,
-            title = "Mis Direcciones",
-            onClick = { /* Navegar a direcciones */ }
+            icon = Icons.Outlined.ContactMail,
+            title = "Cambiar de Correo Electrónico",
+            onClick = { onNavigateToChangeEmail() }
         )
 
         MenuButton(
-            icon = Icons.Outlined.History,
-            title = "Historial de Viajes",
-            onClick = { /* Navegar a historial */ }
+            icon = Icons.Outlined.Phone,
+            title = "Cambiar de Teléfono",
+            onClick = { onNavigateToChangePhone() },
         )
 
         MenuButton(
-            icon = Icons.Outlined.Favorite,
-            title = "Conductores Favoritos",
-            onClick = { /* Navegar a favoritos */ }
-        )
-
-        MenuButton(
-            icon = Icons.Outlined.Payment,
-            title = "Métodos de Pago",
-            onClick = { /* Navegar a métodos de pago */ }
-        )
-
-        MenuButton(
-            icon = Icons.Outlined.Settings,
-            title = "Configuración",
-            onClick = { /* Navegar a configuración */ }
+            icon = Icons.Outlined.ChangeCircle,
+            title = "Convertir a Conductor",
+            onClick = { onNavigateToCitizenToDriver() },
         )
     }
 }

@@ -42,7 +42,8 @@ import kotlinx.coroutines.delay
 fun DriverTripInProgressScreen(
     driverTrip: TripRequestMessage.TripRequestData,
     viewModel: DriverTripInProgressViewModel = hiltViewModel(),
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onNavigateToTripGoing: (tripId: Int, passengerId: Int) -> Unit = { _, _ -> }
 ) {
 
     val context = LocalContext.current
@@ -65,22 +66,19 @@ fun DriverTripInProgressScreen(
     }
 
     val driverTripInProgressState by viewModel.driverTripInProgressState.collectAsState()
-    val isLoading = driverTripInProgressState is DriverTripInProgressViewModel.DriverTripInProgressUiState.Loading
-    val isSuccess = driverTripInProgressState is DriverTripInProgressViewModel.DriverTripInProgressUiState.AcceptSuccess ||
-            driverTripInProgressState is DriverTripInProgressViewModel.DriverTripInProgressUiState.CancelSuccess
 
-    // Variables para los mensajes de progreso
-    val progressTitle = when (driverTripInProgressState) {
-        is DriverTripInProgressViewModel.DriverTripInProgressUiState.AcceptSuccess -> "Viaje iniciado"
-        is DriverTripInProgressViewModel.DriverTripInProgressUiState.CancelSuccess -> "Viaje cancelado"
-        else -> if (showStartConfirmDialog) "Iniciando viaje" else "Cancelando viaje"
-    }
+    // Variables separadas para mayor claridad
+    val isStartLoading = driverTripInProgressState is DriverTripInProgressViewModel.DriverTripInProgressUiState.StartLoading
+    val isCancelLoading = driverTripInProgressState is DriverTripInProgressViewModel.DriverTripInProgressUiState.CancelLoading
+    val isAcceptSuccess = driverTripInProgressState is DriverTripInProgressViewModel.DriverTripInProgressUiState.AcceptSuccess
+    val isCancelSuccess = driverTripInProgressState is DriverTripInProgressViewModel.DriverTripInProgressUiState.CancelSuccess
 
-    val progressMessage = when (driverTripInProgressState) {
-        is DriverTripInProgressViewModel.DriverTripInProgressUiState.AcceptSuccess -> "¡El viaje ha comenzado!"
-        is DriverTripInProgressViewModel.DriverTripInProgressUiState.CancelSuccess -> "El viaje ha sido cancelado"
-        else -> "Por favor espera un momento..."
-    }
+    // Variables para los mensajes de progreso - separadas por tipo de operación
+    val acceptProgressTitle = if (isAcceptSuccess) "Viaje iniciado" else "Iniciando viaje"
+    val cancelProgressTitle = if (isCancelSuccess) "Viaje cancelado" else "Cancelando viaje"
+
+    val acceptProgressMessage = if (isAcceptSuccess) "¡El viaje ha comenzado!" else "Por favor espera un momento..."
+    val cancelProgressMessage = if (isCancelSuccess) "El viaje ha sido cancelado" else "Por favor espera un momento..."
 
     LaunchedEffect (key1 = driverTripInProgressState) {
         when (driverTripInProgressState) {
@@ -92,15 +90,23 @@ fun DriverTripInProgressScreen(
             }
             is DriverTripInProgressViewModel.DriverTripInProgressUiState.AcceptSuccess -> {
                 val successMessage = (driverTripInProgressState as DriverTripInProgressViewModel.DriverTripInProgressUiState.AcceptSuccess).acceptSuccess.message
-                Log.d("DriverTripInProgressScreen", "Success: $successMessage")
-                delay(2000) // Mostrar mensaje de éxito brevemente
+                delay(2000)
                 viewModel.onAcceptSuccessShown()
+
+                onNavigateToTripGoing(driverTrip.tripId, driverTrip.passengerId)
+                Log.d("Navigation", "Navegación completada")
+
             }
             is DriverTripInProgressViewModel.DriverTripInProgressUiState.CancelSuccess -> {
                 val cancelMessage = (driverTripInProgressState as DriverTripInProgressViewModel.DriverTripInProgressUiState.CancelSuccess).cancelSuccess.message
                 Log.d("DriverTripInProgressScreen", "Cancel Success: $cancelMessage")
+                // Esperar 2 segundos antes de navegar
                 delay(2000)
+
+                // Resetear el estado ANTES de navegar
                 viewModel.onCancelSuccessShown()
+
+                // Navegar después del delay y reset
                 onNavigateBack()
             }
             else -> {}
@@ -127,16 +133,6 @@ fun DriverTripInProgressScreen(
         confirmButtonText = "Sí, cancelar"
     )
 
-    // Diálogo de progreso
-//    ITaxCixProgressRequest(
-//        isVisible = isLoading || isSuccess,
-//        isSuccess = isSuccess,
-//        loadingTitle = progressTitle,
-//        successTitle = progressTitle,
-//        loadingMessage = "Por favor espera un momento...",
-//        successMessage = progressMessage
-//    )
-
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = Color.White
@@ -148,7 +144,6 @@ fun DriverTripInProgressScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Información del pasajero (parte superior)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -330,17 +325,27 @@ fun DriverTripInProgressScreen(
             }
         }
 
+        // Diálogo de progreso para iniciar viaje
         ITaxCixProgressRequest(
-            isVisible = isLoading || isSuccess,
-            isSuccess = isSuccess,
-            loadingTitle = progressTitle,
-            successTitle = progressTitle,
-            loadingMessage = "Por favor espera un momento...",
-            successMessage = progressMessage
+            isVisible = isStartLoading || isAcceptSuccess,
+            isSuccess = isAcceptSuccess,
+            loadingTitle = acceptProgressTitle,
+            successTitle = acceptProgressTitle,
+            loadingMessage = acceptProgressMessage,
+            successMessage = acceptProgressMessage
+        )
+
+        // Diálogo de progreso para cancelar viaje
+        ITaxCixProgressRequest(
+            isVisible = isCancelLoading || isCancelSuccess,
+            isSuccess = isCancelSuccess,
+            loadingTitle = cancelProgressTitle,
+            successTitle = cancelProgressTitle,
+            loadingMessage = cancelProgressMessage,
+            successMessage = cancelProgressMessage
         )
     }
 }
-
 
 // Función para convertir coordenadas en direcciones legibles
 private fun getAddressFromLocation(

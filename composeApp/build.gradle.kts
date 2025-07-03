@@ -57,6 +57,7 @@ kotlin {
             implementation(libs.hilt.android)
             implementation(libs.kotlinx.datetime)
             implementation(libs.ktor.client.websockets)
+            implementation(libs.kotlinx.coroutines.play.services)
         }
     }
 

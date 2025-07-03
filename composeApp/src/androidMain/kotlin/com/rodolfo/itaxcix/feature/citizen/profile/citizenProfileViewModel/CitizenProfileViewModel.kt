@@ -4,8 +4,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodolfo.itaxcix.data.local.PreferencesManager
-import com.rodolfo.itaxcix.domain.model.GetProfilePhotoResult
+import com.rodolfo.itaxcix.data.remote.dto.citizen.CitizenToDriverRequestDTO
+import com.rodolfo.itaxcix.domain.model.CitizenToDriverResult
+import com.rodolfo.itaxcix.domain.model.ProfileInformationCitizenResult
 import com.rodolfo.itaxcix.domain.model.UploadProfilePhotoResult
+import com.rodolfo.itaxcix.domain.repository.CitizenRepository
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 import com.rodolfo.itaxcix.utils.ImageUtils.compressAndConvertToBase64
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CitizenProfileViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val citizenRepository: CitizenRepository
 ) : ViewModel() {
 
     val userData = preferencesManager.userData
@@ -111,16 +115,160 @@ class CitizenProfileViewModel @Inject constructor(
     private fun loadAdditionalProfileData() {
         viewModelScope.launch {
             _isLoading.value = true
-            // Aquí podrías hacer llamadas a la API para obtener datos específicos del ciudadano
             _isLoading.value = false
         }
     }
 
     sealed class UploadState {
-        object Initial : UploadState()
-        object Loading : UploadState()
+        data object Initial : UploadState()
+        data object Loading : UploadState()
         data class Success(val message: UploadProfilePhotoResult) : UploadState()
-        data class getSuccess(val message: GetProfilePhotoResult) : UploadState()
         data class Error(val message: String) : UploadState()
+    }
+
+    /*
+        Cargar información del perfil del ciudadano.
+        Esta función obtiene la información del perfil del ciudadano desde el repositorio
+        y actualiza el estado del ViewModel con el resultado.
+     */
+
+    private val _profileInfoState = MutableStateFlow<ProfileInfoState>(ProfileInfoState.Loading)
+    val profileInfoState: StateFlow<ProfileInfoState> = _profileInfoState
+
+    fun loadProfileInformation() {
+        viewModelScope.launch {
+            _profileInfoState.value = ProfileInfoState.Loading
+            try {
+                val userId = userData.value?.id ?: return@launch
+                val profileInfo = citizenRepository.profileInformationCitizen(userId)
+                _profileInfoState.value = ProfileInfoState.Success(profileInfo)
+            } catch (e: Exception) {
+                _profileInfoState.value = ProfileInfoState.Error(e.message ?: "Error al cargar información del perfil")
+            }
+        }
+    }
+
+    sealed class ProfileInfoState {
+        data object Loading : ProfileInfoState()
+        data class Success(val profileInfo: ProfileInformationCitizenResult) : ProfileInfoState()
+        data class Error(val message: String) : ProfileInfoState()
+    }
+
+
+    /*
+        Convertir ciudadano a conductor.
+        Esta función inicia el proceso de conversión de ciudadano a conductor y actualiza el estado del ViewModel
+        con el resultado de la operación.
+     */
+
+    private val _convertToDriverState = MutableStateFlow<ConvertToDriverState>(ConvertToDriverState.Initial)
+    val convertToDriverState: StateFlow<ConvertToDriverState> = _convertToDriverState
+
+    private val _plateValue = MutableStateFlow("")
+    val plateValue: StateFlow<String> = _plateValue
+
+    private val _plateValueError = MutableStateFlow<String?>(null)
+    val plateValueError: StateFlow<String?> = _plateValueError
+
+    fun onPlateValueChange(newValue: String) {
+        _plateValue.value = newValue
+        validatePlateValue()
+        resetConvertToDriverStateIfError()
+    }
+
+    private fun validatePlateValue() {
+        val plate = _plateValue.value
+        when {
+            plate.isBlank() -> {
+                _plateValueError.value = "La placa no puede estar vacía"
+            }
+            plate.contains(" ") -> {
+                _plateValueError.value = "La placa no puede contener espacios"
+            }
+            plate.length != 6 -> {
+                _plateValueError.value = "La placa debe tener exactamente 6 caracteres"
+            }
+            !plate.matches(Regex("^[A-Z0-9]{6}$")) -> {
+                _plateValueError.value = "La placa debe tener solo letras y números"
+            }
+            else -> {
+                _plateValueError.value = null
+            }
+        }
+    }
+
+    private fun validateFieldsForConversion(): Pair<Boolean, String?> {
+        val errorMessages = mutableListOf<String>()
+        var isValid = true
+
+        if (_plateValue.value.isBlank()) {
+            _plateValueError.value = "La placa no puede estar vacía"
+            errorMessages.add("• La placa no puede estar vacía")
+            isValid = false
+        } else if (_plateValue.value.length != 6) {
+            _plateValueError.value = "La placa debe tener exactamente 6 caracteres"
+            errorMessages.add("• La placa debe tener exactamente 6 caracteres")
+            isValid = false
+        } else if (!_plateValue.value.matches(Regex("^[A-Z0-9]{6}$"))) {
+            _plateValueError.value = "La placa debe tener solo letras y números"
+            errorMessages.add("• La placa debe tener solo letras y números")
+            isValid = false
+        } else {
+            _plateValueError.value = null
+        }
+
+        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
+    }
+
+    fun convertToDriver() {
+        _convertToDriverState.value = ConvertToDriverState.Initial
+
+        val (isValid, errorMessage) = validateFieldsForConversion()
+        if (!isValid) {
+            _convertToDriverState.value = ConvertToDriverState.Error(errorMessage ?: "Por favor, corrige los errores antes de continuar.")
+            return
+        }
+
+        viewModelScope.launch {
+            _convertToDriverState.value = ConvertToDriverState.Loading
+            try {
+                val userId = userData.value?.id ?: return@launch
+
+                val request = CitizenToDriverRequestDTO(
+                    userId = userId,
+                    plateValue = _plateValue.value
+                )
+
+                val result = citizenRepository.citizenToDriver(request)
+                _convertToDriverState.value = ConvertToDriverState.Success(result)
+            } catch (e: Exception) {
+                _convertToDriverState.value = ConvertToDriverState.Error(e.message ?: "Error al convertir a conductor")
+            }
+        }
+    }
+
+    fun onConvertToDriverErrorShown() {
+        if (_convertToDriverState.value is ConvertToDriverState.Error) {
+            _convertToDriverState.value = ConvertToDriverState.Initial
+        }
+    }
+
+    fun onConvertToDriverSuccessShown() {
+        if (_convertToDriverState.value is ConvertToDriverState.Success) {
+            _convertToDriverState.value = ConvertToDriverState.Initial
+        }
+    }
+
+    private fun resetConvertToDriverStateIfError() {
+        if (_convertToDriverState.value is ConvertToDriverState.Error) {
+            _convertToDriverState.value = ConvertToDriverState.Initial
+        }
+    }
+
+    sealed class ConvertToDriverState {
+        data object Initial : ConvertToDriverState()
+        data object Loading : ConvertToDriverState()
+        data class Success(val message: CitizenToDriverResult) : ConvertToDriverState()
+        data class Error(val message: String) : ConvertToDriverState()
     }
 }

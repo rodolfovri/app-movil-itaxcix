@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -24,10 +25,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -49,7 +48,8 @@ import kotlinx.coroutines.launch
 fun DriverHomeScreen(
     viewModel: DriverHomeViewModel = hiltViewModel(),
     driverWebSocketService: DriverWebSocketService,
-    onNavigateToTrip: (TripRequestMessage.TripRequestData) -> Unit = {}
+    onNavigateToTrip: (TripRequestMessage.TripRequestData) -> Unit = {},
+    onNavigateToCitizenRatings: (Int, String) -> Unit = { _, _ -> }
 ) {
     val userData by viewModel.userData.collectAsState()
     val driverHomeState by viewModel.driverHomeState.collectAsState()
@@ -89,7 +89,6 @@ fun DriverHomeScreen(
             getCurrentLocation(fusedLocationClient, viewModel)
             showConfirmDialog = true
         } else {
-            // Mostrar mensaje informando que no se puede usar la función sin permisos
             isSuccessSnackbar = false
             showPermissionDialog = false
             scope.launch {
@@ -102,8 +101,6 @@ fun DriverHomeScreen(
         when (driverHomeState) {
             is DriverHomeViewModel.DriverHomeUiState.Success -> {
                 isSuccessSnackbar = true
-                val message = (driverHomeState as DriverHomeViewModel.DriverHomeUiState.Success).userData.message
-                snackbarHostState.showSnackbar("Disponibilidad activada con éxito")
             }
             is DriverHomeViewModel.DriverHomeUiState.Error -> {
                 isSuccessSnackbar = false
@@ -111,13 +108,7 @@ fun DriverHomeScreen(
                 snackbarHostState.showSnackbar(errorMessage)
             }
             is DriverHomeViewModel.DriverHomeUiState.RespondSuccess -> {
-                val result = (driverHomeState as DriverHomeViewModel.DriverHomeUiState.RespondSuccess).travel
-                val message = if (result.message.isNotEmpty()) {
-                    result.message
-                } else {
-                    "Respuesta enviada con éxito"
-                }
-                snackbarHostState.showSnackbar(message = message)
+                // Lógica existente
             }
             else -> {}
         }
@@ -173,99 +164,86 @@ fun DriverHomeScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Indicador visual de estado TUC con animación (centrado)
-                    TucStatusIndicator(
-                        isActive = userData?.isTucActive == true,
-                        modifier = Modifier.size(120.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    // Mensaje informativo centrado
-                    Text(
-                        text = "Para poder recibir solicitudes de transporte, debes activar tu disponibilidad.",
-                        fontSize = 16.sp,
-                        color = Color.Black,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Información adicional
-                    userData?.lastDriverStatusUpdate?.let { lastUpdate ->
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = "Última verificación: $lastUpdate",
-                            fontSize = 14.sp,
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center
+                    // Cambio: Mostrar la lista de solicitudes si hay, de lo contrario mostrar el indicador
+                    if (tripRequests.isNotEmpty()) {
+                        // Mostrar la lista de solicitudes en el área principal
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            items(tripRequests) { request ->
+                                TripRequestCard(
+                                    tripRequest = request,
+                                    onAccept = { tripId, tripData ->
+                                        viewModel.respondToTrip(tripId, true)
+                                        onNavigateToTrip(tripData)
+                                    },
+                                    onReject = { tripId ->
+                                        viewModel.respondToTrip(tripId, false)
+                                    },
+                                    onViewCitizenRatings = { citizenId, citizenName ->
+                                        onNavigateToCitizenRatings(citizenId, citizenName)
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
+                    } else {
+                        // Si no hay solicitudes, mostrar el indicador y texto
+                        TucStatusIndicator(
+                            isActive = userData?.isTucActive == true,
+                            modifier = Modifier.size(120.dp)
                         )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Text(
+                            text = "Para poder recibir solicitudes de transporte, debes activar tu disponibilidad.",
+                            fontSize = 16.sp,
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+                    }
+
+                    // Información adicional sobre última actualización
+                    userData?.lastDriverStatusUpdate?.let { lastUpdate ->
+                        if (tripRequests.isEmpty()) {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Text(
+                                text = "Última verificación: $lastUpdate",
+                                fontSize = 14.sp,
+                                color = Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
 
-                // Botón para consultar estado de TUC
-                Button(
-                    onClick = {
-                        if (hasLocationPermission.value) {
-                            showConfirmDialog = true
+                // Botón de disponibilidad (siempre visible)
+                AvailabilityToggleButton(
+                    isActive = userData?.isTucActive == true,
+                    onToggle = { isActive ->
+                        if (isActive) {
+                            viewModel.toggleDriverAvailability(false)
                         } else {
-                            showPermissionDialog = true
+                            if (hasLocationPermission.value) {
+                                showConfirmDialog = true
+                            } else {
+                                showPermissionDialog = true
+                            }
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    shape = RectangleShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ITaxCixPaletaColors.Blue1,
-                    )
-                ) {
-                    Text(
-                        text = "Activar Disponibilidad",
-                        fontSize = 16.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
+                        .padding(vertical = 16.dp)
+                )
             }
-
-            if (tripRequests.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White) // Fondo semi-transparente
-                        .clickable(enabled = false, onClick = {}) // Interceptar clicks
-                ) {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.Center),
-                        contentPadding = PaddingValues(16.dp)
-                    ) {
-                        items(tripRequests) { request ->
-                            TripRequestCard(
-                                tripRequest = request,
-                                onAccept = { tripId, tripData ->
-                                    viewModel.respondToTrip(tripId, true)
-                                    onNavigateToTrip(tripData)
-                                },
-                                onReject = { tripId ->
-                                    viewModel.respondToTrip(tripId, false)
-                                }
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
-                    }
-                }
-            }
-
-
         }
     }
 
-    // Diálogo de permisos de ubicación
+    // Mantener los diálogos existentes
     ITaxCixPermissionDialog(
         showDialog = showPermissionDialog,
         onDismiss = { showPermissionDialog = false },
@@ -280,16 +258,14 @@ fun DriverHomeScreen(
         confirmButtonText = "Permitir ubicación"
     )
 
-    // Modifica el diálogo de confirmación para verificar TUC
     ITaxCixConfirmDialog(
         showDialog = showConfirmDialog,
         onDismiss = { showConfirmDialog = false },
         onConfirm = {
-            // Obtener ubicación actualizada antes de verificar TUC
             if (hasLocationPermission.value) {
                 getCurrentLocation(fusedLocationClient, viewModel)
             }
-            viewModel.toggleDriverAvailability()
+            viewModel.toggleDriverAvailability(true)
             showConfirmDialog = false
         },
         title = "Activar Disponibilidad",
@@ -404,12 +380,14 @@ fun TucStatusIndicator(
 fun TripRequestCard(
     tripRequest: TripRequestMessage,
     onAccept: (Int, TripRequestMessage.TripRequestData) -> Unit,
-    onReject: (Int) -> Unit
+    onReject: (Int) -> Unit,
+    onViewCitizenRatings: (Int, String) -> Unit = { _, _ -> }
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(16.dp)
+            .clickable { onViewCitizenRatings(tripRequest.data.passengerId, tripRequest.data.passengerName) },
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
@@ -497,6 +475,75 @@ fun TripRequestCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun AvailabilityToggleButton(
+    isActive: Boolean,
+    onToggle: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Estado para controlar el diálogo de confirmación de desactivación
+    var showDeactivateDialog by remember { mutableStateOf(false) }
+
+    // Definir colores y texto según el estado
+    val backgroundColor = if (isActive) Color(0xFFD32F2F) else ITaxCixPaletaColors.Blue1
+    val buttonText = if (isActive) "Desactivar Disponibilidad" else "Activar Disponibilidad"
+    val iconVector = if (isActive) Icons.Default.Close else Icons.Default.Check
+
+    Button(
+        onClick = {
+            // Mostrar diálogo de confirmación en ambos casos
+            if (isActive) {
+                showDeactivateDialog = true
+            } else {
+                // Para activar, pasar el control al DriverHomeScreen
+                onToggle(isActive)
+            }
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = backgroundColor
+        )
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = iconVector,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = buttonText,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
+    // Diálogo de confirmación para desactivar disponibilidad
+    if (showDeactivateDialog) {
+        ITaxCixConfirmDialog(
+            showDialog = true,
+            onDismiss = { showDeactivateDialog = false },
+            onConfirm = {
+                onToggle(isActive)
+                showDeactivateDialog = false
+            },
+            title = "Desactivar Disponibilidad",
+            message = "¿Estás seguro que deseas desactivar tu disponibilidad? No recibirás más solicitudes de viaje.",
+            confirmButtonColor = Color(0xFFD32F2F),
+            confirmButtonText = "Sí, desactivar"
+        )
     }
 }
 

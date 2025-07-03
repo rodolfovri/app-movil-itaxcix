@@ -25,7 +25,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -39,6 +38,7 @@ import com.rodolfo.itaxcix.data.remote.websocket.DriverWebSocketService
 import com.rodolfo.itaxcix.feature.driver.history.DriverHistoryScreen
 import com.rodolfo.itaxcix.feature.driver.home.DriverHomeScreen
 import com.rodolfo.itaxcix.feature.driver.profile.DriverProfileScreen
+import com.rodolfo.itaxcix.feature.driver.travel.DriverTripGoingScreen
 import com.rodolfo.itaxcix.feature.driver.travel.DriverTripInProgressScreen
 import com.rodolfo.itaxcix.feature.driver.viewModel.AuthViewModel
 import com.rodolfo.itaxcix.ui.design.ITaxCixConfirmDialog
@@ -51,7 +51,6 @@ object DriverRoutes {
     const val HOME = "driverHome"
     const val PROFILE = "driverProfile"
     const val HISTORY = "driverHistory"
-    const val TRIP_IN_PROGRESS = "driver_trip_in_progress/{tripId}/{passengerId}/{originLat}/{originLng}/{destLat}/{destLng}/{passengerName}/{passengerRating}"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,7 +58,13 @@ object DriverRoutes {
 fun DashboardDriverScreen(
     viewModel: AuthViewModel = hiltViewModel(),
     driverWebSocketService: DriverWebSocketService,
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onNavigateToPersonalInfo: () -> Unit = {},
+    onNavigateToChangeEmail: () -> Unit = {},
+    onNavigateToChangePhone: () -> Unit = {},
+    onNavigateToTravelDetail: (Int, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
+    onNavigateToTripInProgress: (TripRequestMessage.TripRequestData) -> Unit = {},
+    onNavigateToCitizenRatings: (Int, String) -> Unit = { _, _ -> }
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val navController = rememberNavController()
@@ -152,7 +157,13 @@ fun DashboardDriverScreen(
                 Column(modifier = Modifier.padding(padding)) {
                     DriverNavHost(
                         navController = navController,
-                        driverWebSocketService = driverWebSocketService
+                        driverWebSocketService = driverWebSocketService,
+                        onNavigateToPersonalInfo = onNavigateToPersonalInfo,
+                        onNavigateToChangeEmail = onNavigateToChangeEmail,
+                        onNavigateToChangePhone = onNavigateToChangePhone,
+                        onNavigateToTravelDetail = onNavigateToTravelDetail,
+                        onNavigateToTripInProgress = onNavigateToTripInProgress,
+                        onNavigateToCitizenRatings = onNavigateToCitizenRatings
                     )
                 }
             }
@@ -183,7 +194,13 @@ fun DashboardDriverScreen(
 @Composable
 fun DriverNavHost(
     navController: NavHostController,
-    driverWebSocketService: DriverWebSocketService
+    driverWebSocketService: DriverWebSocketService,
+    onNavigateToPersonalInfo: () -> Unit = {},
+    onNavigateToChangeEmail: () -> Unit = {},
+    onNavigateToChangePhone: () -> Unit = {},
+    onNavigateToTravelDetail: (Int, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
+    onNavigateToTripInProgress: (TripRequestMessage.TripRequestData) -> Unit = {},
+    onNavigateToCitizenRatings: (Int, String) -> Unit = { _, _ -> }
 ) {
     NavHost(
         navController = navController,
@@ -193,58 +210,25 @@ fun DriverNavHost(
             DriverHomeScreen(
                 driverWebSocketService = driverWebSocketService,
                 onNavigateToTrip = { tripData ->
-                    val routeDestination = "driver_trip_in_progress/${tripData.tripId}/${tripData.passengerId}/" +
-                            "${tripData.origin.lat}/${tripData.origin.lng}/" +
-                            "${tripData.destination.lat}/${tripData.destination.lng}/" +
-                            "${tripData.passengerName.replace(" ", "_")}/${tripData.passengerRating}"
-                    navController.navigate(routeDestination)
-                }
-            )
-        }
-
-        composable(
-            route = DriverRoutes.TRIP_IN_PROGRESS,
-            arguments = listOf(
-                navArgument("tripId") { type = NavType.IntType },
-                navArgument("passengerId") { type = NavType.IntType },
-                navArgument("originLat") { type = NavType.FloatType },
-                navArgument("originLng") { type = NavType.FloatType },
-                navArgument("destLat") { type = NavType.FloatType },
-                navArgument("destLng") { type = NavType.FloatType },
-                navArgument("passengerName") { type = NavType.StringType },
-                navArgument("passengerRating") { type = NavType.FloatType }
-            )
-        ) { backStackEntry ->
-
-            val tripId = backStackEntry.arguments?.getInt("tripId") ?: 0
-            val passengerId = backStackEntry.arguments?.getInt("passengerId") ?: 0
-            val originLat = backStackEntry.arguments?.getFloat("originLat")?.toDouble() ?: 0.0
-            val originLng = backStackEntry.arguments?.getFloat("originLng")?.toDouble() ?: 0.0
-            val destLat = backStackEntry.arguments?.getFloat("destLat")?.toDouble() ?: 0.0
-            val destLng = backStackEntry.arguments?.getFloat("destLng")?.toDouble() ?: 0.0
-            val passengerName = backStackEntry.arguments?.getString("passengerName")?.replace("_", " ") ?: ""
-            val passengerRating = backStackEntry.arguments?.getFloat("passengerRating")?.toDouble() ?: 0.0
-
-            val trip = TripRequestMessage.TripRequestData(
-                tripId = tripId,
-                passengerId = passengerId,
-                origin = TripRequestMessage.Location(lat = originLat, lng = originLng),
-                destination = TripRequestMessage.Location(lat = destLat, lng = destLng),
-                passengerName = passengerName,
-                passengerRating = passengerRating
-            )
-
-            // Tu código del screen aquí
-            DriverTripInProgressScreen(
-                driverTrip = trip
+                    onNavigateToTripInProgress(tripData)
+                },
+                onNavigateToCitizenRatings = { citizenId, citizenName ->
+                    onNavigateToCitizenRatings(citizenId, citizenName)
+                },
             )
         }
 
         composable(DriverRoutes.PROFILE) {
-            DriverProfileScreen()
+            DriverProfileScreen(
+                onNavigateToPersonalInfo = onNavigateToPersonalInfo,
+                onNavigateToChangeEmail = onNavigateToChangeEmail,
+                onNavigateToChangePhone = onNavigateToChangePhone
+            )
         }
         composable(DriverRoutes.HISTORY) {
-            DriverHistoryScreen()
+            DriverHistoryScreen(
+                onNavigateToTravelDetail = onNavigateToTravelDetail
+            )
         }
     }
 }

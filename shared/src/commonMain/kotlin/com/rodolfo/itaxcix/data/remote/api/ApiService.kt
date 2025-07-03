@@ -3,6 +3,7 @@ package com.rodolfo.itaxcix.data.remote.api
 import com.rodolfo.itaxcix.data.remote.dto.UserDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.CitizenRegisterRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.DriverRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.HelpCenterResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.driver.DriverStatusResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.common.GetProfilePhotoResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.LoginResponseDTO
@@ -23,10 +24,30 @@ import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateVehicleResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.citizen.CitizenToDriverRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.citizen.CitizenToDriverResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.DriverToCitizenRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.DriverToCitizenResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.citizen.ProfileInformationCitizenResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangeEmailRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangeEmailResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangePhoneRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangePhoneResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.RatingsCommentsResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangeEmailRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangeEmailResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangePhoneRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangePhoneResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.ProfileInformationDriverResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.EmergencyNumberResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.RegisterIncidentRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.RegisterIncidentResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelCancelResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelHistoryResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRateRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRateResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRatingResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRespondResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelStartResponseDTO
@@ -55,4 +76,18 @@ interface ApiService {
     suspend fun travelCancel(travelId: Int): TravelCancelResponseDTO
     suspend fun travelComplete(travelId: Int): TravelCancelResponseDTO
     suspend fun registerIncident(incident: RegisterIncidentRequestDTO): RegisterIncidentResponseDTO
+    suspend fun travelRate(travelId: Int, travelRate: TravelRateRequestDTO): TravelRateResponseDTO
+    suspend fun profileInformationCitizen(userId: Int): ProfileInformationCitizenResponseDTO
+    suspend fun profileInformationDriver(userId: Int): ProfileInformationDriverResponseDTO
+    suspend fun travelHistory(userId: Int, page: Int): TravelHistoryResponseDTO
+    suspend fun changeEmail(changeEmail: ChangeEmailRequestDTO): ChangeEmailResponseDTO
+    suspend fun verifyChangeEmail(verifyChange: VerifyChangeEmailRequestDTO): VerifyChangeEmailResponseDTO
+    suspend fun changePhone(changePhone: ChangePhoneRequestDTO): ChangePhoneResponseDTO
+    suspend fun verifyChangePhone(verifyChange: VerifyChangePhoneRequestDTO): VerifyChangePhoneResponseDTO
+    suspend fun travelRating(travelId: Int): TravelRatingResponseDTO
+    suspend fun helpCenter(): HelpCenterResponseDTO
+    suspend fun emergencyNumber(): EmergencyNumberResponseDTO
+    suspend fun driverToCitizen(driverToCitizen: DriverToCitizenRequestDTO): DriverToCitizenResponseDTO
+    suspend fun getRatingCommentsUser(userId: Int): RatingsCommentsResponseDTO
+    suspend fun citizenToDriver(citizenToDriver: CitizenToDriverRequestDTO): CitizenToDriverResponseDTO
 }

@@ -1,9 +1,18 @@
 package com.rodolfo.itaxcix.feature.citizen.travel.travelViewModel
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.libraries.places.api.model.AutocompletePrediction
 import com.google.android.libraries.places.api.model.AutocompleteSessionToken
 import com.google.android.libraries.places.api.model.Place
@@ -18,23 +27,30 @@ import com.rodolfo.itaxcix.data.remote.dto.common.DirectionsResponse
 import com.rodolfo.itaxcix.domain.model.TravelResult
 import com.rodolfo.itaxcix.domain.repository.CitizenRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 @HiltViewModel
 class RideRequestViewModel @Inject constructor(
     private val placesClient: PlacesClient,
     private val citizenRepository: CitizenRepository,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _originQuery = MutableStateFlow("")
@@ -59,10 +75,30 @@ class RideRequestViewModel @Inject constructor(
 
     private val sessionToken = AutocompleteSessionToken.newInstance()
 
+    private val fusedLocationClient: FusedLocationProviderClient =
+        LocationServices.getFusedLocationProviderClient(context)
+
+    private val _locationPermissionGranted = MutableStateFlow(false)
+    val locationPermissionGranted: StateFlow<Boolean> = _locationPermissionGranted
+
+    private val _isLoadingLocation = MutableStateFlow(false)
+    val isLoadingLocation: StateFlow<Boolean> = _isLoadingLocation
+
+    // Verificar permisos de ubicación
+    fun checkLocationPermission(): Boolean {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        _locationPermissionGranted.value = hasPermission
+        return hasPermission
+    }
+
     // Método para buscar lugares
     fun updateOriginQuery(query: String) {
         _originQuery.value = query
-        if (query.length > 2) {
+        if (query.length > 1) {
             searchPlaces(query, true)
         } else {
             _originPredictions.value = emptyList()
@@ -72,10 +108,149 @@ class RideRequestViewModel @Inject constructor(
     // Método para buscar lugares
     fun updateDestinationQuery(query: String) {
         _destinationQuery.value = query
-        if (query.length > 2) {
+        if (query.length > 1) {
             searchPlaces(query, false)
         } else {
             _destinationPredictions.value = emptyList()
+        }
+    }
+
+    fun setCurrentLocationAsOrigin() {
+        viewModelScope.launch {
+            try {
+                _isLoadingLocation.value = true
+
+                if (!checkLocationPermission()) {
+                    Log.e("RideRequestViewModel", "Permisos de ubicación no concedidos")
+                    _isLoadingLocation.value = false
+                    return@launch
+                }
+
+                val location = getCurrentLocation()
+
+                if (location != null) {
+                    val currentLatLng = LatLng(location.latitude, location.longitude)
+                    val address = getAddressFromLocation(location.latitude, location.longitude)
+
+                    // Combinar dirección y distrito para mostrar en el campo
+                    val displayText = "${address.streetAddress}, ${address.district.lowercase().split(" ").joinToString(" ") { it.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() } }}"
+
+                    _originLatLng.value = currentLatLng
+                    _originLatitude.value = location.latitude
+                    _originLongitude.value = location.longitude
+                    _originQuery.value = displayText
+                    _originAddress.value = address.streetAddress
+                    _originDistrict.value = address.district
+                    _originPredictions.value = emptyList()
+
+                    Log.d("RideRequestViewModel", "Ubicación actual: $displayText")
+
+                    if (_destinationLatLng.value != null) {
+                        calculateRoute()
+                    }
+                } else {
+                    Log.e("RideRequestViewModel", "No se pudo obtener la ubicación actual")
+                }
+            } catch (e: Exception) {
+                Log.e("RideRequestViewModel", "Error obteniendo ubicación actual: ${e.message}")
+            } finally {
+                _isLoadingLocation.value = false
+            }
+        }
+    }
+
+    data class AddressInfo(
+        val streetAddress: String,
+        val district: String
+    )
+
+    private suspend fun getAddressFromLocation(latitude: Double, longitude: Double): AddressInfo {
+        return try {
+            val geocoder = android.location.Geocoder(context, java.util.Locale.getDefault())
+
+            // Usar geocodificación inversa para obtener la dirección
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                // Para API 33+
+                suspendCoroutine { continuation ->
+                    geocoder.getFromLocation(latitude, longitude, 1) { addresses ->
+                        val address = addresses.firstOrNull()
+                        if (address != null) {
+                            val streetAddress = buildString {
+                                address.thoroughfare?.let { append("$it ") }
+                                address.subThoroughfare?.let { append(it) }
+                            }.trim().ifEmpty { "Dirección no disponible" }
+
+                            // CAMBIO PRINCIPAL: Priorizar locality sobre subLocality para obtener el distrito
+                            val district = address.locality?.uppercase()
+                                ?: address.subAdminArea?.uppercase() // Nivel administrativo sub (distrito)
+                                ?: address.adminArea?.uppercase()    // Nivel administrativo principal (provincia/región)
+                                ?: "DISTRITO_NO_DISPONIBLE"
+
+                            // Log para debugging
+                            Log.d("GeoCoding", "subLocality: ${address.subLocality}")
+                            Log.d("GeoCoding", "locality: ${address.locality}")
+                            Log.d("GeoCoding", "subAdminArea: ${address.subAdminArea}")
+                            Log.d("GeoCoding", "adminArea: ${address.adminArea}")
+                            Log.d("GeoCoding", "Distrito seleccionado: $district")
+
+                            continuation.resume(AddressInfo(streetAddress, district))
+                        } else {
+                            continuation.resume(AddressInfo("Ubicación actual", "UBICACION_ACTUAL"))
+                        }
+                    }
+                }
+            } else {
+                // Para versiones anteriores
+                withContext(Dispatchers.IO) {
+                    val addresses = geocoder.getFromLocation(latitude, longitude, 1)
+                    val address = addresses?.firstOrNull()
+
+                    if (address != null) {
+                        val streetAddress = buildString {
+                            address.thoroughfare?.let { append("$it ") }
+                            address.subThoroughfare?.let { append(it) }
+                        }.trim().ifEmpty { "Dirección no disponible" }
+
+                        // CAMBIO PRINCIPAL: Priorizar locality sobre subLocality para obtener el distrito
+                        val district = address.locality?.uppercase()
+                            ?: address.subAdminArea?.uppercase() // Nivel administrativo sub (distrito)
+                            ?: address.adminArea?.uppercase()    // Nivel administrativo principal (provincia/región)
+                            ?: "DISTRITO_NO_DISPONIBLE"
+
+                        // Log para debugging
+                        Log.d("GeoCoding", "subLocality: ${address.subLocality}")
+                        Log.d("GeoCoding", "locality: ${address.locality}")
+                        Log.d("GeoCoding", "subAdminArea: ${address.subAdminArea}")
+                        Log.d("GeoCoding", "adminArea: ${address.adminArea}")
+                        Log.d("GeoCoding", "Distrito seleccionado: $district")
+
+                        AddressInfo(streetAddress, district)
+                    } else {
+                        AddressInfo("Ubicación actual", "UBICACION_ACTUAL")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("RideRequestViewModel", "Error en geocodificación inversa: ${e.message}")
+            AddressInfo("Ubicación actual", "UBICACION_ACTUAL")
+        }
+    }
+
+    private suspend fun getCurrentLocation(): Location? {
+        return try {
+            if (!checkLocationPermission()) {
+                return null
+            }
+
+            val cancellationTokenSource = CancellationTokenSource()
+
+            fusedLocationClient.getCurrentLocation(
+                Priority.PRIORITY_HIGH_ACCURACY,
+                cancellationTokenSource.token
+            ).await()
+        } catch (e: Exception) {
+            Log.e("RideRequestViewModel", "Error getting current location: ${e.message}")
+            null
         }
     }
 
@@ -83,10 +258,10 @@ class RideRequestViewModel @Inject constructor(
     private fun searchPlaces(query: String, isOrigin: Boolean) {
 
         // Define las coordenadas del rectángulo que abarca la región de Lambayeque
-        val southwestLat = -6.9000  // Latitud suroeste aproximada de Lambayeque
-        val southwestLng = -80.1500 // Longitud suroeste aproximada de Lambayeque
-        val northeastLat = -5.4000  // Latitud noreste aproximada de Lambayeque
-        val northeastLng = -79.2000 // Longitud noreste aproximada de Lambayeque
+        val southwestLat = -6.9500  // Latitud suroeste de la provincia de Chiclayo
+        val southwestLng = -79.9500 // Longitud suroeste de la provincia de Chiclayo
+        val northeastLat = -6.6500  // Latitud noreste de la provincia de Chiclayo
+        val northeastLng = -79.6500 // Longitud noreste de la provincia de Chiclayo
 
         // Crear el rectángulo delimitador
         val bounds = RectangularBounds.newInstance(
@@ -118,41 +293,58 @@ class RideRequestViewModel @Inject constructor(
     }
 
     // Método para seleccionar un lugar
+    // Método para seleccionar un lugar
     fun selectPlace(prediction: AutocompletePrediction, isOrigin: Boolean) {
         if (isOrigin) {
-            _originQuery.value = prediction.getPrimaryText(null).toString()
-            _originPredictions.value = emptyList()
             getPlaceLocation(prediction.placeId) { location ->
                 _selectedOrigin.value = prediction
                 _originLatLng.value = location
                 _originLatitude.value = location.latitude
                 _originLongitude.value = location.longitude
-                _originAddress.value = prediction.getPrimaryText(null).toString()
-                val fullSecondaryText = prediction.getSecondaryText(null).toString()
-                val districtOnly = fullSecondaryText.split(",")[0].trim().uppercase()
-                _originDistrict.value = districtOnly
-                Log.d("Origen Distrito", "Distrito: ${_originDistrict.value}, Dirección: ${_originAddress.value}")
 
-                if (_selectedDestination.value != null) {
-                    calculateRoute() // Calcular la ruta si ya hay un destino seleccionado
+                // Extraer calle y distrito
+                val streetName = prediction.getPrimaryText(null).toString()
+                val fullSecondaryText = prediction.getSecondaryText(null).toString()
+                val districtOnly = fullSecondaryText.split(",")[0].trim()
+
+                // Combinar calle y distrito para mostrar en el campo
+                val displayText = "$streetName, $districtOnly"
+
+                _originQuery.value = displayText
+                _originAddress.value = streetName
+                _originDistrict.value = districtOnly.uppercase()
+                _originPredictions.value = emptyList()
+
+                Log.d("Origen", "Calle: $streetName, Distrito: $districtOnly, Display: $displayText")
+
+                if (_destinationLatLng.value != null) {
+                    calculateRoute()
                 }
             }
-
         } else {
-            _destinationQuery.value = prediction.getPrimaryText(null).toString()
-            _destinationPredictions.value = emptyList()
             getPlaceLocation(prediction.placeId) { location ->
                 _selectedDestination.value = prediction
                 _destinationLatLng.value = location
                 _destinationLatitude.value = location.latitude
                 _destinationLongitude.value = location.longitude
-                _destinationAddress.value = prediction.getPrimaryText(null).toString()
+
+                // Extraer calle y distrito
+                val streetName = prediction.getPrimaryText(null).toString()
                 val fullSecondaryText = prediction.getSecondaryText(null).toString()
-                val districtOnly = fullSecondaryText.split(",")[0].trim().uppercase()
-                _destinationDistrict.value = districtOnly
-                Log.d("Destino Distrito", "Distrito: ${_destinationDistrict.value}")
-                if (_selectedOrigin.value != null) {
-                    calculateRoute() // Calcular la ruta si ya hay un origen seleccionado
+                val districtOnly = fullSecondaryText.split(",")[0].trim()
+
+                // Combinar calle y distrito para mostrar en el campo
+                val displayText = "$streetName, $districtOnly"
+
+                _destinationQuery.value = displayText
+                _destinationAddress.value = streetName
+                _destinationDistrict.value = districtOnly.uppercase()
+                _destinationPredictions.value = emptyList()
+
+                Log.d("Destino", "Calle: $streetName, Distrito: $districtOnly, Display: $displayText")
+
+                if (_originLatLng.value != null) {
+                    calculateRoute()
                 }
             }
         }
@@ -378,6 +570,35 @@ class RideRequestViewModel @Inject constructor(
         return true
     }
 
+    // Agregar esta función de validación al RideRequestViewModel
+    private fun validateDifferentLocations(): Boolean {
+        val origin = _originLatLng.value
+        val destination = _destinationLatLng.value
+
+        if (origin != null && destination != null) {
+            // Calcular distancia entre puntos (en metros)
+            val distance = calculateDistance(origin, destination)
+
+            if (distance < 100) { // Si están muy cerca (menos de 100 metros)
+                _generalError.value = "El origen y destino deben ser diferentes"
+                return false
+            }
+        }
+
+        _generalError.value = null
+        return true
+    }
+
+    private fun calculateDistance(origin: LatLng, destination: LatLng): Float {
+        val results = FloatArray(1)
+        android.location.Location.distanceBetween(
+            origin.latitude, origin.longitude,
+            destination.latitude, destination.longitude,
+            results
+        )
+        return results[0]
+    }
+
     private fun resetStateIfError() {
         if (_rideRequestState.value is RideRequestState.Error) {
             _rideRequestState.value = RideRequestState.Initial
@@ -415,6 +636,12 @@ class RideRequestViewModel @Inject constructor(
         } else if (_destinationAddress.value.isNullOrEmpty()) {
             _destinationError.value = "La dirección de destino es obligatoria."
             errorMessages.add("La dirección de destino es obligatoria.")
+            isValid = false
+        }
+
+        // Validar que origen y destino sean diferentes
+        if (!validateDifferentLocations()) {
+            errorMessages.add("El origen y destino deben ser diferentes.")
             isValid = false
         }
 

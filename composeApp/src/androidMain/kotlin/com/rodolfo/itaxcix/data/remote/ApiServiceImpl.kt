@@ -6,6 +6,7 @@ import com.rodolfo.itaxcix.data.remote.dto.UserDTO
 import com.rodolfo.itaxcix.data.remote.api.ApiService
 import com.rodolfo.itaxcix.data.remote.dto.auth.CitizenRegisterRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.DriverRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.auth.HelpCenterResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.driver.DriverStatusResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.common.GetProfilePhotoResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.LoginResponseDTO
@@ -29,10 +30,30 @@ import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.citizen.CitizenToDriverRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.citizen.CitizenToDriverResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.DriverToCitizenRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.DriverToCitizenResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.citizen.ProfileInformationCitizenResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangeEmailRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangeEmailResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangePhoneRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangePhoneResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.RatingsCommentsResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangeEmailRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangeEmailResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangePhoneRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangePhoneResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.ProfileInformationDriverResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.EmergencyNumberResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.RegisterIncidentRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.RegisterIncidentResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelCancelResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelHistoryResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRateRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRateResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRatingResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRespondResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelStartResponseDTO
@@ -43,6 +64,7 @@ import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
+import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -396,6 +418,238 @@ class ApiServiceImpl(
                 addAuthToken()
                 contentType(ContentType.Application.Json)
                 setBody(incident)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun travelRate(travelId: Int, travelRate: TravelRateRequestDTO): TravelRateResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/travels/$travelId/rate") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(travelRate)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun profileInformationCitizen(userId: Int): ProfileInformationCitizenResponseDTO {
+        return safeApiCall {
+            val response = client.get("$baseUrl/profile/citizen/$userId") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun profileInformationDriver(userId: Int): ProfileInformationDriverResponseDTO {
+        return safeApiCall {
+            val response = client.get("$baseUrl/profile/driver/$userId") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun travelHistory(userId: Int, page: Int): TravelHistoryResponseDTO {
+        return safeApiCall {
+            val response = client.get("$baseUrl/users/$userId/travels/history") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                parameter("page", page)
+                parameter("perPage", 10)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun changeEmail(changeEmail: ChangeEmailRequestDTO): ChangeEmailResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/profile/change-email") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(changeEmail)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun verifyChangeEmail(verifyChange: VerifyChangeEmailRequestDTO): VerifyChangeEmailResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/profile/verify-email") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(verifyChange)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun changePhone(changePhone: ChangePhoneRequestDTO): ChangePhoneResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/profile/change-phone") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(changePhone)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun verifyChangePhone(verifyChange: VerifyChangePhoneRequestDTO): VerifyChangePhoneResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/profile/verify-phone") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(verifyChange)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun travelRating(travelId: Int): TravelRatingResponseDTO {
+        return safeApiCall {
+            val response = client.get("$baseUrl/travels/$travelId/ratings") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun helpCenter(): HelpCenterResponseDTO {
+        return safeApiCall {
+            val response = client.get("$baseUrl/help-center/public") {
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun emergencyNumber(): EmergencyNumberResponseDTO {
+        return safeApiCall {
+            val response = client.get("$baseUrl/emergency/number") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun driverToCitizen(driverToCitizen: DriverToCitizenRequestDTO): DriverToCitizenResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/users/request-citizen-role") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(driverToCitizen)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun getRatingCommentsUser(userId: Int): RatingsCommentsResponseDTO {
+        return safeApiCall {
+            val response = client.get("$baseUrl/users/$userId/ratings/comments") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun citizenToDriver(citizenToDriver: CitizenToDriverRequestDTO): CitizenToDriverResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/users/request-driver-role") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(citizenToDriver)
             }
 
             if (response.status.value in 200..299) {

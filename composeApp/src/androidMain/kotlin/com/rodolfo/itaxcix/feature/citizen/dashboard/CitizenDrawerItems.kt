@@ -49,9 +49,9 @@ data class CitizenDrawerItem(
 )
 
 val citizenDrawerItems = listOf(
-    CitizenDrawerItem("Inicio", Icons.Outlined.Home, CitizenRoutes.HOME, "INICIO CIUDADANO"),
-    CitizenDrawerItem("Perfil", Icons.Default.PersonOutline, CitizenRoutes.PROFILE, "PERFIL CIUDADANO"),
-    CitizenDrawerItem("Historial", Icons.Default.History, CitizenRoutes.HISTORY, "HISTORIAL CIUDADANO"),
+    CitizenDrawerItem("Inicio", Icons.Outlined.Home, CitizenRoutes.HOME),
+    CitizenDrawerItem("Perfil", Icons.Default.PersonOutline, CitizenRoutes.PROFILE),
+    CitizenDrawerItem("Historial", Icons.Default.History, CitizenRoutes.HISTORY),
     CitizenDrawerItem("Cerrar sesión", Icons.AutoMirrored.Filled.ExitToApp, "logout") // Sin permiso requerido
 )
 

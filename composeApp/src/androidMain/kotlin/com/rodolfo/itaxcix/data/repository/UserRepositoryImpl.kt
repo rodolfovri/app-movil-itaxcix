@@ -12,9 +12,17 @@ import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateBiometricRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateDocumentRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.ValidateVehicleRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.auth.VerifyCodeRegisterRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangeEmailRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.ChangePhoneRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangeEmailRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangePhoneRequestDTO
 import com.rodolfo.itaxcix.data.remote.websocket.CitizenWebSocketService
+import com.rodolfo.itaxcix.domain.model.ChangeEmailResult
+import com.rodolfo.itaxcix.domain.model.ChangePhoneResult
 import com.rodolfo.itaxcix.domain.model.GetProfilePhotoResult
+import com.rodolfo.itaxcix.domain.model.HelpCenterResult
 import com.rodolfo.itaxcix.domain.model.LoginResult
+import com.rodolfo.itaxcix.domain.model.RatingsCommentsResult
 import com.rodolfo.itaxcix.domain.model.RecoveryResult
 import com.rodolfo.itaxcix.domain.model.RegisterDriverResult
 import com.rodolfo.itaxcix.domain.model.RegisterResult
@@ -25,6 +33,8 @@ import com.rodolfo.itaxcix.domain.model.User
 import com.rodolfo.itaxcix.domain.model.ValidateBiometricResult
 import com.rodolfo.itaxcix.domain.model.ValidateDocumentResult
 import com.rodolfo.itaxcix.domain.model.ValidateVehicleResult
+import com.rodolfo.itaxcix.domain.model.VerifyChangeEmailResult
+import com.rodolfo.itaxcix.domain.model.VerifyChangePhoneResult
 import com.rodolfo.itaxcix.domain.model.VerifyCodeRegisterResult
 import com.rodolfo.itaxcix.domain.model.VerifyCodeResult
 import com.rodolfo.itaxcix.domain.repository.DriverRepository
@@ -104,37 +114,29 @@ class UserRepositoryImpl(
     override suspend fun login(documentValue: String, password: String): LoginResult {
         val response = apiService.login(documentValue, password)
 
-        val token = response.data.token
-        val userId = response.data.userId.toString()
-        val document = response.data.documentValue
-        val firstName = response.data.firstName
-        val lastName = response.data.lastName
-        val availabilityStatus = response.data.availabilityStatus ?: false
-        val roles = response.data.roles
-        val permissions = response.data.permissions
-        val rating = response.data.rating
+        val loginData = response.data
 
         // Guardar información básica del usuario
         val userData = UserData(
-            id = userId.toInt(),
-            firstName = firstName,
-            lastName = lastName,
-            fullName = "$firstName $lastName",
+            id = loginData.userId,
+            firstName = loginData.firstName,
+            lastName = loginData.lastName,
+            fullName = "${loginData.firstName} ${loginData.lastName}",
             isTucActive = null,
-            rating = rating,
+            rating = loginData.rating,
             nickname = "",
-            document = document,
+            document = loginData.documentValue,
             email = "",
             phone = "",
             address = "",
             city = "",
             country = "",
-            roles = roles,
-            permissions = permissions,
+            roles = loginData.roles.map { it.name },
+            permissions = loginData.permissions.map { it.name },
             status = "",
-            isDriverAvailable = availabilityStatus,
+            isDriverAvailable = loginData.availabilityStatus ?: false,
             lastDriverStatusUpdate = null,
-            authToken = token
+            authToken = loginData.token
         )
 
         // Guardar datos básicos primero
@@ -142,7 +144,7 @@ class UserRepositoryImpl(
 
         // Cargar la foto de perfil inmediatamente después del login
         try {
-            val photoResult = getProfilePhoto(userId.toInt())
+            val photoResult = getProfilePhoto(loginData.userId)
             if (photoResult.base64Image != null) {
                 val updatedUserData = userData.copy(
                     profileImage = photoResult.base64Image
@@ -153,9 +155,9 @@ class UserRepositoryImpl(
             Log.e("UserRepositoryImpl", "Error cargando foto de perfil: ${e.message}")
         }
 
-        if (roles.contains("CIUDADANO")) {
+        // Conectar WebSocket si es ciudadano
+        if (loginData.roles.any { it.id == 1 }) { // El id 1 es para ciudadanos
             try {
-                // Conectar al WebSocket para el ciudadano
                 Log.d("UserRepositoryImpl", "Conectando al WebSocket para el ciudadano")
                 citizenWebSocketService.connect()
             } catch (e: Exception) {
@@ -163,21 +165,20 @@ class UserRepositoryImpl(
             }
         }
 
-        val user = User(
-            id = userId,
-            nickname = "",
-            document = document,
-            name = "",
-            email = "",
-            phone = "",
-            address = "",
-            city = "",
-            country = "",
-            rol = roles,
-            authToken = token
+        return LoginResult(
+            message = response.message,
+            data = LoginResult.LoginData(
+                token = loginData.token,
+                userId = loginData.userId,
+                documentValue = loginData.documentValue,
+                firstName = loginData.firstName,
+                lastName = loginData.lastName,
+                roles = loginData.roles.map { LoginResult.LoginData.Role(it.id, it.name) },
+                permissions = loginData.permissions.map { LoginResult.LoginData.Permission(it.id, it.name) },
+                rating = loginData.rating,
+                availabilityStatus = loginData.availabilityStatus
+            )
         )
-
-        return LoginResult(message = response.message, user = user)
     }
 
     override suspend fun recovery(contactTypeId: Int, contact: String): RecoveryResult {
@@ -205,7 +206,6 @@ class UserRepositoryImpl(
 
     override suspend fun getProfilePhoto(userId: Int): GetProfilePhotoResult {
         val response = apiService.getProfilePhoto(userId)
-        Log.d("UserRepositoryImpl", "getProfilePhoto response: $response")
         return GetProfilePhotoResult(
             message = response.message,
             base64Image = response.data.base64Image
@@ -219,6 +219,78 @@ class UserRepositoryImpl(
         )
     }
 
+    override suspend fun changeEmail(changeEmail: ChangeEmailRequestDTO): ChangeEmailResult {
+        val response = apiService.changeEmail(changeEmail)
+        return ChangeEmailResult(
+            message = response.message
+        )
+    }
+
+    override suspend fun verifyChangeEmail(verifyChange: VerifyChangeEmailRequestDTO): VerifyChangeEmailResult {
+        val response = apiService.verifyChangeEmail(verifyChange)
+        return VerifyChangeEmailResult(
+            message = response.message
+        )
+    }
+
+    override suspend fun changePhone(changePhone: ChangePhoneRequestDTO): ChangePhoneResult {
+        val response = apiService.changePhone(changePhone)
+        return ChangePhoneResult(
+            message = response.message
+        )
+    }
+
+    override suspend fun verifyChangePhone(verifyChange: VerifyChangePhoneRequestDTO): VerifyChangePhoneResult {
+        val response = apiService.verifyChangePhone(verifyChange)
+        return VerifyChangePhoneResult(
+            message = response.message
+        )
+    }
+
+    override suspend fun helpCenter(): HelpCenterResult {
+        val response = apiService.helpCenter()
+        return HelpCenterResult(
+            message = response.message,
+            data = response.data.map { HelpCenterResult.HelpCenterData(
+                id = it.id,
+                title = it.title,
+                subtitle = it.subtitle,
+                answer = it.answer,
+                active = it.active
+            ) }
+        )
+    }
+
+    override suspend fun getRatingCommentsUser(userId: Int): RatingsCommentsResult {
+        val response = apiService.getRatingCommentsUser(userId)
+        return RatingsCommentsResult(
+            message = response.message,
+            data = RatingsCommentsResult.RatingsData(
+                averageRating = response.data.averageRating,
+                totalRatings = response.data.totalRatings,
+                comments = response.data.comments.map { comment ->
+                    RatingsCommentsResult.RatingsData.CommentInfo(
+                        id = comment.id,
+                        travelId = comment.travelId,
+                        raterName = comment.raterName,
+                        score = comment.score,
+                        comment = comment.comment,
+                        createdAt = comment.createdAt
+                    )
+                },
+                meta = RatingsCommentsResult.RatingsData.MetaInfo(
+                    total = response.data.meta.total,
+                    perPage = response.data.meta.perPage,
+                    currentPage = response.data.meta.currentPage,
+                    lastPage = response.data.meta.lastPage,
+                    search = response.data.meta.search,
+                    filters = response.data.meta.filters,
+                    sortBy = response.data.meta.sortBy,
+                    sortDirection = response.data.meta.sortDirection
+                )
+            )
+        )
+    }
 
     // Funciones de extensión para mapeo
     private fun UserDTO.toDomain(): User {

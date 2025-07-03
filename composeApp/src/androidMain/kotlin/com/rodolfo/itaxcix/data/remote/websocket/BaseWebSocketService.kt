@@ -46,10 +46,20 @@ abstract class BaseWebSocketService(
             try {
                 _connectionStatus.emit(ConnectionStatus.CONNECTING)
 
+                // Obtener el token de autenticación
+                val authToken = preferencesManager.userData.value?.authToken
+                if (authToken.isNullOrEmpty()) {
+                    _connectionStatus.emit(ConnectionStatus.ERROR("Token de autenticación no disponible"))
+                    return@launch
+                }
+
+                // Construir la URL con el token como parámetro de consulta
+                val wsUrlWithToken = "${ApiConfig.WS_URL_COMPLETED}?token=$authToken"
+
                 client.webSocket(
                     {
                         this.method = HttpMethod.Get
-                        url(ApiConfig.WS_URL_COMPLETED) // Aquí usas la URL completa
+                        url(wsUrlWithToken) // Aquí usas la URL completa
                     },
                     block = {
                         session = this

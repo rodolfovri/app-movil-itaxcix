@@ -14,9 +14,21 @@ data class LoginResponseDTO(
         val documentValue: String,
         val firstName: String,
         val lastName: String,
-        val availabilityStatus: Boolean? = null,
-        val roles: List<String> = emptyList(),
-        val permissions: List<String> = emptyList(),
-        val rating: Double
-    )
+        val roles: List<RoleDTO>,
+        val permissions: List<PermissionDTO>,
+        val rating: Double,
+        val availabilityStatus: Boolean? = null
+    ) {
+        @Serializable
+        data class RoleDTO(
+            val id: Int,
+            val name: String
+        )
+
+        @Serializable
+        data class PermissionDTO(
+            val id: Int,
+            val name: String
+        )
+    }
 }

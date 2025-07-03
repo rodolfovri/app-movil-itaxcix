@@ -2,7 +2,6 @@ package com.rodolfo.itaxcix.feature.citizen.home
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyColumn
 import com.google.maps.android.compose.GoogleMap
@@ -13,6 +12,7 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -64,11 +64,11 @@ fun CitizenHomeScreenPreview() {
     CitizenHomeScreen()
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CitizenHomeScreen(
     viewModel: CitizenHomeViewModel = hiltViewModel(),
-    onNavigateToRideRequest: (InitialDriversResponse.DriverInfo) -> Unit = {}
+    onNavigateToRideRequest: (InitialDriversResponse.DriverInfo) -> Unit = {},
+    onNavigateToDriverRatings: (InitialDriversResponse.DriverInfo) -> Unit = {}
 ) {
     val drivers by viewModel.availableDrivers.collectAsState()
     val isLoading by viewModel.isLoading
@@ -143,6 +143,9 @@ fun CitizenHomeScreen(
                             ).padding(vertical = 4.dp),
                             onRequestRideClick = { selectedDriver ->
                                 onNavigateToRideRequest(selectedDriver)
+                            },
+                            onViewRatingsClick = { selectedDriver ->
+                                onNavigateToDriverRatings(selectedDriver)
                             }
                         )
                     }
@@ -154,9 +157,10 @@ fun CitizenHomeScreen(
 
 @Composable
 fun GoogleMapView(drivers: List<InitialDriversResponse.DriverInfo>) {
-    val singaporeLatLng = remember { LatLng(1.35, 103.87) } // Centro predeterminado
+    // Coordenadas del centro de Chiclayo, Perú
+    val chiclavoLatLng = remember { LatLng(-6.7714, -79.8407) }
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(singaporeLatLng, 12f)
+        position = CameraPosition.fromLatLngZoom(chiclavoLatLng, 13f)
     }
 
     // Usar la ubicación de un conductor como centro si hay conductores
@@ -198,10 +202,13 @@ fun GoogleMapView(drivers: List<InitialDriversResponse.DriverInfo>) {
 fun DriverCard(
     driver: InitialDriversResponse.DriverInfo,
     modifier: Modifier = Modifier,
-    onRequestRideClick: (InitialDriversResponse.DriverInfo) -> Unit = {} // Añadir parámetro para manejar clic
+    onRequestRideClick: (InitialDriversResponse.DriverInfo) -> Unit = {},
+    onViewRatingsClick: (InitialDriversResponse.DriverInfo) -> Unit = {}
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable {
+            onViewRatingsClick(driver)
+        },
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

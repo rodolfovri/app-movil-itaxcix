@@ -16,4 +16,13 @@
         <item>Email</item>
         <item>Teléfono</item>
     </string-array>
+
+    <string-array name="incidence_types">
+        <item>FALTA DE RESPETO</item>
+        <item>FALTA DE PUNTUALIDAD</item>
+        <item>FALTA DE HIGIENE</item>
+        <item>FALTA DE SEGURIDAD</item>
+        <item>FALTA DE CUMPLIMIENTO</item>
+        <item>OTRO</item>
+    </string-array>
 </resources>

@@ -68,10 +68,12 @@ fun WaitingForDriverScreen(
             is WaitingForDriverViewModel.TripResponseState.Accepted -> {
                 val accepted = tripResponseState as WaitingForDriverViewModel.TripResponseState.Accepted
                 delay(2000) // Dar tiempo para ver el mensaje
+                viewModel.resetTripResponseState()
                 onTripAccepted(tripId, accepted.driverId, accepted.driverName)
             }
             is WaitingForDriverViewModel.TripResponseState.Rejected -> {
                 delay(2000) // Dar tiempo para ver el mensaje
+                viewModel.resetTripResponseState()
                 onBackToHome()
             }
             else -> {}

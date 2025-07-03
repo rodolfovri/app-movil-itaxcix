@@ -2,8 +2,10 @@ package com.rodolfo.itaxcix.data.remote.websocket
 
 import android.util.Log
 import com.rodolfo.itaxcix.data.local.PreferencesManager
+import com.rodolfo.itaxcix.data.remote.dto.websockets.DriverAvailableResponse
 import com.rodolfo.itaxcix.data.remote.dto.websockets.DriverLocationUpdateResponse
 import com.rodolfo.itaxcix.data.remote.dto.websockets.DriverOfflineResponse
+import com.rodolfo.itaxcix.data.remote.dto.websockets.DriverUnavailableResponse
 import com.rodolfo.itaxcix.data.remote.dto.websockets.InitialDriversResponse
 import com.rodolfo.itaxcix.data.remote.dto.websockets.NewDriverResponse
 import com.rodolfo.itaxcix.data.remote.dto.websockets.WebSocketMessage
@@ -103,6 +105,16 @@ class CitizenWebSocketService @Inject constructor(
                     handleDriverOffline(driverOfflineResponse)
                     Log.d("CitizenWebSocket", "Received driver offline: ${driverOfflineResponse.data.id}")
                 }
+                "driver_unavailable" -> {
+                    val driverUnavailableResponse = json.decodeFromString<DriverUnavailableResponse>(messageText)
+                    handleDriverUnavailable(driverUnavailableResponse)
+                    Log.d("CitizenWebSocket", "Received driver unavailable: ${driverUnavailableResponse.data.id}")
+                }
+                "driver_available" -> {
+                    val driverAvailableResponse = json.decodeFromString<DriverAvailableResponse>(messageText)
+                    handleDriverAvailable(driverAvailableResponse)
+                    Log.d("CitizenWebSocket", "Received driver available: ${driverAvailableResponse.data.id}")
+                }
                 "driver_location_update" -> {
                     val driverLocationUpdateResponse = json.decodeFromString<DriverLocationUpdateResponse>(messageText)
                     handleDriverLocationUpdate(driverLocationUpdateResponse)
@@ -135,7 +147,7 @@ class CitizenWebSocketService @Inject constructor(
 
             when (statusUpdate.data.status) {
                 "completed" -> Log.d("CitizenWebSocket", "Trip completed: ${statusUpdate.data.tripId}")
-                "cancelled" -> Log.d("CitizenWebSocket", "Trip cancelled: ${statusUpdate.data.tripId}")
+                "canceled" -> Log.d("CitizenWebSocket", "Trip cancelled: ${statusUpdate.data.tripId}")
                 else -> Log.w("CitizenWebSocket", "Unknown trip status: ${statusUpdate.data.status}")
             }
         }
@@ -154,6 +166,65 @@ class CitizenWebSocketService @Inject constructor(
 
             } catch (e: Exception) {
                 Log.e("CitizenWebSocket", "Error handling trip response: ${e.message}")
+            }
+        }
+    }
+
+    private fun handleDriverUnavailable(response: DriverUnavailableResponse) {
+        scope.launch {
+            try {
+                val driverId = response.data.id
+                val currentDrivers = _availableDrivers.value
+
+                // Remover el conductor de la lista de disponibles
+                val updatedDrivers = currentDrivers.filter { it.id != driverId }
+                _availableDrivers.value = updatedDrivers
+
+                Log.d("CitizenWebSocket", "Conductor $driverId ya no está disponible. Conductores restantes: ${updatedDrivers.size}")
+            } catch (e: Exception) {
+                Log.e("CitizenWebSocket", "Error al procesar conductor no disponible: ${e.message}")
+            }
+        }
+    }
+
+    private fun handleDriverAvailable(response: DriverAvailableResponse) {
+        scope.launch {
+            try {
+                val driverData = response.data
+
+                // Convertir a DriverInfo
+                val newDriverInfo = InitialDriversResponse.DriverInfo(
+                    id = driverData.id,
+                    fullName = driverData.fullName,
+                    image = driverData.image,
+                    location = InitialDriversResponse.Location(
+                        lat = driverData.location.lat,
+                        lng = driverData.location.lng
+                    ),
+                    rating = driverData.rating,
+                    timestamp = driverData.timestamp
+                )
+
+                val currentDrivers = _availableDrivers.value
+
+                // Verificar que el conductor no esté ya en la lista
+                if (!currentDrivers.any { it.id == newDriverInfo.id }) {
+                    _availableDrivers.value = currentDrivers + newDriverInfo
+                    Log.d("CitizenWebSocket", "Conductor ${driverData.fullName} está ahora disponible. Total conductores: ${_availableDrivers.value.size}")
+                } else {
+                    // Si ya está en la lista, actualizar sus datos
+                    val updatedDrivers = currentDrivers.map { driver ->
+                        if (driver.id == newDriverInfo.id) {
+                            newDriverInfo
+                        } else {
+                            driver
+                        }
+                    }
+                    _availableDrivers.value = updatedDrivers
+                    Log.d("CitizenWebSocket", "Datos actualizados para conductor disponible: ${driverData.fullName}")
+                }
+            } catch (e: Exception) {
+                Log.e("CitizenWebSocket", "Error al procesar conductor disponible: ${e.message}")
             }
         }
     }
@@ -276,6 +347,12 @@ class CitizenWebSocketService @Inject constructor(
                     Log.d("CitizenWebSocket", "Se eliminaron $removedCount conductores inactivos")
                 }
             }
+        }
+    }
+
+    fun resetTripResponseState() {
+        scope.launch {
+            _tripResponse.value = null
         }
     }
 }
