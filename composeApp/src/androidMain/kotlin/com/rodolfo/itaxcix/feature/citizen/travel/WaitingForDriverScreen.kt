@@ -1,5 +1,6 @@
 package com.rodolfo.itaxcix.feature.citizen.travel
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,6 +68,7 @@ fun WaitingForDriverScreen(
         when (tripResponseState) {
             is WaitingForDriverViewModel.TripResponseState.Accepted -> {
                 val accepted = tripResponseState as WaitingForDriverViewModel.TripResponseState.Accepted
+                Log.d("WaitingForDriverScreen", "Trip accepted: $accepted")
                 delay(2000) // Dar tiempo para ver el mensaje
                 viewModel.resetTripResponseState()
                 onTripAccepted(tripId, accepted.driverId, accepted.driverName)

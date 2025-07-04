@@ -4,6 +4,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class RegisterIncidentResponseDTO (
-    val incidentId: Int,
-    val message: String
-)
+    val message: String,
+    val data: RegisterIncidentData
+) {
+    @Serializable
+    data class RegisterIncidentData(
+        val incidentId: Int,
+        val message: String
+    )
+}

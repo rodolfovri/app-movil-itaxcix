@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -36,8 +37,8 @@ data class DrawerItem(
 )
 
 val driverDrawerItems = listOf(
-    DrawerItem("Inicio", Icons.Default.Home, "driverHome"),
-    DrawerItem("Perfil", Icons.Default.Person, "driverProfile",),
+    DrawerItem("Inicio", Icons.Outlined.Home, "driverHome"),
+    DrawerItem("Perfil", Icons.Default.PersonOutline, "driverProfile",),
     DrawerItem("Historial", Icons.Default.History, "driverHistory"),
     DrawerItem("Cerrar sesión", Icons.AutoMirrored.Filled.ExitToApp, "logout")
 )

@@ -33,8 +33,8 @@ class TravelRepositoryImpl(private val apiService: ApiService) : TravelRepositor
     override suspend fun registerIncident(incident: RegisterIncidentRequestDTO): RegisterIncidentResult {
         val response = apiService.registerIncident(incident)
         return RegisterIncidentResult(
-            incidentId = response.incidentId,
-            message = response.message
+            incidentId = response.data.incidentId,
+            message = response.data.message
         )
     }
 

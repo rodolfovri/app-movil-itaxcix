@@ -93,7 +93,6 @@ fun DriverTripInProgressScreen(
             if (update.data.tripId == driverTrip.tripId) {
                 when (update.data.status) {
                     "canceled" -> {
-                        // El ciudadano canceló el viaje
                         showCitizenCancelledDialog = true
                     }
                     "completed" -> {

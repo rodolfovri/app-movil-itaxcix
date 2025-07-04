@@ -1,5 +1,9 @@
 package com.rodolfo.itaxcix.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -154,7 +158,31 @@ fun AppNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = Routes.WELCOME
+        startDestination = Routes.WELCOME,
+        enterTransition = {
+            slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(500)
+            ) + fadeIn(animationSpec = tween(500))
+        },
+        exitTransition = {
+            slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                animationSpec = tween(500)
+            ) + fadeOut(animationSpec = tween(500))
+        },
+        popEnterTransition = {
+            slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(500)
+            ) + fadeIn(animationSpec = tween(500))
+        },
+        popExitTransition = {
+            slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                animationSpec = tween(500)
+            ) + fadeOut(animationSpec = tween(500))
+        }
     ) {
 
         composable(
@@ -189,7 +217,7 @@ fun AppNavigation(
 
             LoginScreen(
                 viewModel = viewModel,
-                onBackClick = { navController.navigate(Routes.REGISTER_OPTIONS) },
+                onBackClick = { navController.popBackStack() },
                 onDriverLoginSuccess = {
                     navController.navigate(Routes.DASHBOARD_DRIVER) {
                         popUpTo(Routes.WELCOME) { inclusive = false }
@@ -376,8 +404,11 @@ fun AppNavigation(
             DashboardCitizenScreen(
                 viewModel = viewModel,
                 onLogout = {
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.WELCOME) { inclusive = false }
+                    scope.launch {
+                        preferencesManager.clearUserData()
+                    }
+                    navController.navigate(Routes.WELCOME) {
+                        popUpTo(0) { inclusive = true }
                     }
                 },
                 onNavigateToRideRequest = { driver ->
@@ -424,8 +455,11 @@ fun AppNavigation(
                 viewModel = viewModel,
                 driverWebSocketService = driverViewModel.driverWebSocketService,
                 onLogout = {
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.WELCOME) { inclusive = false }
+                    scope.launch {
+                        preferencesManager.clearUserData()
+                    }
+                    navController.navigate(Routes.WELCOME) {
+                        popUpTo(0) { inclusive = true } // Limpia todo el back stack
                     }
                 },
                 onNavigateToPersonalInfo = {

@@ -130,10 +130,15 @@ class CitizenTripViewModel @Inject constructor(
                     comment = _comment.value
                 )
 
+                Log.d("CitizenTripViewModel", "Registrando incidencia: $incidentRequest")
+
                 val result = travelRepository.registerIncident(incidentRequest)
                 _incidentState.value = IncidentState.Success(result)
+                Log.d("CitizenTripViewModel", "Incidencia registrada exitosamente: $result")
+
             } catch (e: Exception) {
                 _incidentState.value = IncidentState.Error(e.message ?: "Error al registrar la incidencia")
+                Log.d("CitizenTripViewModel", "Error al registrar la incidencia: ${e.message}")
             }
         }
     }
