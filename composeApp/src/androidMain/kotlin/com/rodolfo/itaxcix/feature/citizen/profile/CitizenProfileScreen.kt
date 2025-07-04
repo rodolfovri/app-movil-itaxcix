@@ -29,8 +29,10 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChangeCircle
 import androidx.compose.material.icons.outlined.ChangeCircle
 import androidx.compose.material.icons.outlined.ContactMail
+import androidx.compose.material.icons.outlined.LocalTaxi
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material.icons.outlined.TaxiAlert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme

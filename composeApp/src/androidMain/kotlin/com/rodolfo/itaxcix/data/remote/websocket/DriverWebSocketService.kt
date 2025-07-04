@@ -51,7 +51,9 @@ class DriverWebSocketService @Inject constructor(
                 }
                 "trip_status_update" -> {
                     // Aquí podrías manejar actualizaciones de estado de viaje
-                    Log.d("DriverWebSocket", "Actualización de estado de viaje recibida: ${messageText}")
+                    val statusUpdate = json.decodeFromString<TripStatusUpdateMessage>(messageText)
+                    handleTripStatusUpdate(statusUpdate)
+                    Log.d("DriverWebSocket", "Actualización de estado de viaje recibida: ${statusUpdate.data.tripId} - Estado: ${statusUpdate.data.status}")
                 }
                 // Otros tipos de mensajes que ya estaban manejando
             }
@@ -185,6 +187,12 @@ class DriverWebSocketService @Inject constructor(
         } catch (e: Exception) {
             Log.e("DriverWebSocket", "Error en logout: ${e.message}")
             disconnect() // Asegurar desconexión incluso si hay error
+        }
+    }
+
+    fun resetTripStatusUpdates() {
+        scope.launch {
+            _tripStatusUpdates.value = null
         }
     }
 }

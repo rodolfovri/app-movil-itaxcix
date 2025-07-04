@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodolfo.itaxcix.data.local.PreferencesManager
 import com.rodolfo.itaxcix.data.remote.dto.driver.DriverToCitizenRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.VehicleAssociationRequestDTO
 import com.rodolfo.itaxcix.domain.model.ProfileInformationDriverResult
 import com.rodolfo.itaxcix.domain.model.UploadProfilePhotoResult
+import com.rodolfo.itaxcix.domain.model.VehicleAssociationResult
 import com.rodolfo.itaxcix.domain.repository.DriverRepository
 import com.rodolfo.itaxcix.domain.repository.UserRepository
 import com.rodolfo.itaxcix.utils.ImageUtils.compressAndConvertToBase64
@@ -211,5 +213,191 @@ class DriverProfileViewModel @Inject constructor(
         data object Loading : DriverToCitizenState()
         data object Success : DriverToCitizenState()
         data class Error(val message: String) : DriverToCitizenState()
+    }
+
+    /*
+    Asociar vehículo
+    Esta función permite al conductor asociar un nuevo vehículo usando la placa.
+    Se actualiza el estado del ViewModel según el resultado de la operación.
+*/
+
+    // Estado para asociar vehículo
+    private val _vehicleAssociationState = MutableStateFlow<VehicleAssociationState>(VehicleAssociationState.Initial)
+    val vehicleAssociationState: StateFlow<VehicleAssociationState> = _vehicleAssociationState
+
+    private val _plateValue = MutableStateFlow("")
+    val plateValue: StateFlow<String> = _plateValue
+
+    private val _plateValueError = MutableStateFlow<String?>(null)
+    val plateValueError: StateFlow<String?> = _plateValueError
+
+    fun onPlateValueChange(newValue: String) {
+        _plateValue.value = newValue
+        validatePlateValue()
+        resetVehicleAssociationStateIfError()
+    }
+
+    private fun validatePlateValue() {
+        val plate = _plateValue.value
+        when {
+            plate.isBlank() -> {
+                _plateValueError.value = "La placa no puede estar vacía"
+            }
+            plate.contains(" ") -> {
+                _plateValueError.value = "La placa no puede contener espacios"
+            }
+            plate.length != 6 -> {
+                _plateValueError.value = "La placa debe tener exactamente 6 caracteres"
+            }
+            !plate.matches(Regex("^[A-Z0-9]{6}$")) -> {
+                _plateValueError.value = "La placa debe tener solo letras y números"
+            }
+            else -> {
+                _plateValueError.value = null
+            }
+        }
+    }
+
+    private fun validateFieldsForAssociation(): Pair<Boolean, String?> {
+        val errorMessages = mutableListOf<String>()
+        var isValid = true
+
+        if (_plateValue.value.isBlank()) {
+            _plateValueError.value = "La placa no puede estar vacía"
+            errorMessages.add("• La placa no puede estar vacía")
+            isValid = false
+        } else if (_plateValue.value.length != 6) {
+            _plateValueError.value = "La placa debe tener exactamente 6 caracteres"
+            errorMessages.add("• La placa debe tener exactamente 6 caracteres")
+            isValid = false
+        } else if (!_plateValue.value.matches(Regex("^[A-Z0-9]{6}$"))) {
+            _plateValueError.value = "La placa debe tener solo letras y números"
+            errorMessages.add("• La placa debe tener solo letras y números")
+            isValid = false
+        } else {
+            _plateValueError.value = null
+        }
+
+        return Pair(isValid, if (errorMessages.isNotEmpty()) errorMessages.joinToString("\n") else null)
+    }
+
+    fun associateVehicle() {
+        _vehicleAssociationState.value = VehicleAssociationState.Initial
+
+        val (isValid, errorMessage) = validateFieldsForAssociation()
+        if (!isValid) {
+            _vehicleAssociationState.value = VehicleAssociationState.Error(errorMessage ?: "Por favor, corrige los errores antes de continuar.")
+            return
+        }
+
+        val userId = userData.value?.id
+        if (userId == null) {
+            _vehicleAssociationState.value = VehicleAssociationState.Error("Usuario no encontrado")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _vehicleAssociationState.value = VehicleAssociationState.Loading
+
+                val request = VehicleAssociationRequestDTO(plateValue = _plateValue.value)
+                val result = driverRepository.vehicleAssociation(userId, request)
+
+                Log.d("VehicleAssociation", "Result: $result")
+
+                _vehicleAssociationState.value = VehicleAssociationState.Success(result)
+
+            } catch (e: Exception) {
+                Log.e("VehicleAssociation", "Error associating vehicle: ${e.message}")
+                _vehicleAssociationState.value = VehicleAssociationState.Error(
+                    e.message ?: "Error al asociar vehículo"
+                )
+            }
+        }
+    }
+
+    fun onVehicleAssociationErrorShown() {
+        if (_vehicleAssociationState.value is VehicleAssociationState.Error) {
+            _vehicleAssociationState.value = VehicleAssociationState.Initial
+        }
+    }
+
+    fun onVehicleAssociationSuccessShown() {
+        if (_vehicleAssociationState.value is VehicleAssociationState.Success) {
+            _vehicleAssociationState.value = VehicleAssociationState.Initial
+        }
+    }
+
+    private fun resetVehicleAssociationStateIfError() {
+        if (_vehicleAssociationState.value is VehicleAssociationState.Error) {
+            _vehicleAssociationState.value = VehicleAssociationState.Initial
+        }
+    }
+
+    fun resetVehicleAssociationState() {
+        _vehicleAssociationState.value = VehicleAssociationState.Initial
+    }
+
+    sealed class VehicleAssociationState {
+        data object Initial : VehicleAssociationState()
+        data object Loading : VehicleAssociationState()
+        data class Success(val result: VehicleAssociationResult) : VehicleAssociationState()
+        data class Error(val message: String) : VehicleAssociationState()
+    }
+
+
+    /*
+        Desasociar vehículo
+        Esta función permite al conductor desasociar su vehículo actual.
+        Se actualiza el estado del ViewModel según el resultado de la operación.
+     */
+
+    // Estado para desasociar vehículo
+    private val _vehicleDisassociationState = MutableStateFlow<VehicleDisassociationState>(VehicleDisassociationState.Initial)
+    val vehicleDisassociationState: StateFlow<VehicleDisassociationState> = _vehicleDisassociationState
+
+    fun disassociateVehicle() {
+        val userId = userData.value?.id
+        if (userId == null) {
+            _vehicleDisassociationState.value = VehicleDisassociationState.Error("Usuario no encontrado")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _vehicleDisassociationState.value = VehicleDisassociationState.Loading
+
+                val result = driverRepository.vehicleDissociation(userId)
+
+                Log.d("VehicleDisassociation", "Result: $result")
+
+                _vehicleDisassociationState.value = VehicleDisassociationState.Success
+
+                // Mantener el estado de éxito por 2 segundos
+                delay(2000)
+                _vehicleDisassociationState.value = VehicleDisassociationState.Initial
+
+            } catch (e: Exception) {
+                Log.e("VehicleDisassociation", "Error disassociating vehicle: ${e.message}")
+                _vehicleDisassociationState.value = VehicleDisassociationState.Error(
+                    e.message ?: "Error al desasociar vehículo"
+                )
+
+                // Mantener el estado de error por 3 segundos
+                delay(3000)
+                _vehicleDisassociationState.value = VehicleDisassociationState.Initial
+            }
+        }
+    }
+
+    fun resetVehicleDisassociationState() {
+        _vehicleDisassociationState.value = VehicleDisassociationState.Initial
+    }
+
+    sealed class VehicleDisassociationState {
+        data object Initial : VehicleDisassociationState()
+        data object Loading : VehicleDisassociationState()
+        data object Success : VehicleDisassociationState()
+        data class Error(val message: String) : VehicleDisassociationState()
     }
 }

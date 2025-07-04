@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.rodolfo.itaxcix.data.remote.dto.websockets.TripRequestMessage
+import com.rodolfo.itaxcix.data.remote.websocket.DriverWebSocketService
 import com.rodolfo.itaxcix.feature.driver.travel.driverTravelViewModel.DriverTripInProgressViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 import com.rodolfo.itaxcix.ui.design.ITaxCixConfirmDialog
@@ -43,7 +44,8 @@ fun DriverTripInProgressScreen(
     driverTrip: TripRequestMessage.TripRequestData,
     viewModel: DriverTripInProgressViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
-    onNavigateToTripGoing: (tripId: Int, passengerId: Int) -> Unit = { _, _ -> }
+    onNavigateToTripGoing: (tripId: Int, passengerId: Int) -> Unit = { _, _ -> },
+    driverWebSocketService: DriverWebSocketService
 ) {
 
     val context = LocalContext.current
@@ -53,6 +55,10 @@ fun DriverTripInProgressScreen(
     // Variables para controlar los diálogos
     var showStartConfirmDialog by remember { mutableStateOf(false) }
     var showCancelConfirmDialog by remember { mutableStateOf(false) }
+    var showCitizenCancelledDialog by remember { mutableStateOf(false) }
+
+    // Observar actualizaciones de estado del viaje desde WebSocket
+    val tripStatusUpdates by driverWebSocketService.tripStatusUpdates.collectAsState()
 
     // Geocodificar las direcciones al cargar la pantalla
     LaunchedEffect(key1 = driverTrip) {
@@ -79,6 +85,30 @@ fun DriverTripInProgressScreen(
 
     val acceptProgressMessage = if (isAcceptSuccess) "¡El viaje ha comenzado!" else "Por favor espera un momento..."
     val cancelProgressMessage = if (isCancelSuccess) "El viaje ha sido cancelado" else "Por favor espera un momento..."
+
+    // Manejar actualizaciones de estado del viaje vía WebSocket
+    LaunchedEffect(tripStatusUpdates) {
+        tripStatusUpdates?.let { update ->
+            // Verificar si la actualización es para este viaje específico
+            if (update.data.tripId == driverTrip.tripId) {
+                when (update.data.status) {
+                    "canceled" -> {
+                        // El ciudadano canceló el viaje
+                        showCitizenCancelledDialog = true
+                    }
+                    "completed" -> {
+                        // El viaje fue completado (si es relevante para esta pantalla)
+                        // Manejar según sea necesario
+                    }
+                    else -> {
+                        // Otros estados si es necesario
+                    }
+                }
+                // Resetear el estado después de procesarlo
+                driverWebSocketService.resetTripStatusUpdates()
+            }
+        }
+    }
 
     LaunchedEffect (key1 = driverTripInProgressState) {
         when (driverTripInProgressState) {
@@ -113,6 +143,14 @@ fun DriverTripInProgressScreen(
         }
     }
 
+    LaunchedEffect(showCitizenCancelledDialog) {
+        if (showCitizenCancelledDialog) {
+            delay(3000) // Esperar 3 segundos para que el usuario lea el mensaje
+            showCitizenCancelledDialog = false
+            onNavigateBack()
+        }
+    }
+
     // Diálogo de confirmación para iniciar viaje
     ITaxCixConfirmDialog(
         showDialog = showStartConfirmDialog,
@@ -131,6 +169,16 @@ fun DriverTripInProgressScreen(
         title = "Cancelar viaje",
         message = "¿Estás seguro de que deseas cancelar el viaje con ${driverTrip.passengerName}?",
         confirmButtonText = "Sí, cancelar"
+    )
+
+    // Reemplaza el ITaxCixConfirmDialog con esto:
+    ITaxCixProgressRequest(
+        isVisible = showCitizenCancelledDialog,
+        isSuccess = true,
+        loadingTitle = "Viaje cancelado",
+        successTitle = "Viaje cancelado",
+        loadingMessage = "El pasajero ${driverTrip.passengerName} ha cancelado el viaje.",
+        successMessage = "Redirigiendo al dashboard principal...",
     )
 
     Box(modifier = Modifier.fillMaxSize()) {

@@ -64,7 +64,8 @@ fun DashboardDriverScreen(
     onNavigateToChangePhone: () -> Unit = {},
     onNavigateToTravelDetail: (Int, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
     onNavigateToTripInProgress: (TripRequestMessage.TripRequestData) -> Unit = {},
-    onNavigateToCitizenRatings: (Int, String) -> Unit = { _, _ -> }
+    onNavigateToCitizenRatings: (Int, String) -> Unit = { _, _ -> },
+    onNavigateToVehicleAssociation: () -> Unit = {},
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val navController = rememberNavController()
@@ -163,7 +164,8 @@ fun DashboardDriverScreen(
                         onNavigateToChangePhone = onNavigateToChangePhone,
                         onNavigateToTravelDetail = onNavigateToTravelDetail,
                         onNavigateToTripInProgress = onNavigateToTripInProgress,
-                        onNavigateToCitizenRatings = onNavigateToCitizenRatings
+                        onNavigateToCitizenRatings = onNavigateToCitizenRatings,
+                        onNavigateToVehicleAssociation = onNavigateToVehicleAssociation
                     )
                 }
             }
@@ -200,7 +202,8 @@ fun DriverNavHost(
     onNavigateToChangePhone: () -> Unit = {},
     onNavigateToTravelDetail: (Int, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
     onNavigateToTripInProgress: (TripRequestMessage.TripRequestData) -> Unit = {},
-    onNavigateToCitizenRatings: (Int, String) -> Unit = { _, _ -> }
+    onNavigateToCitizenRatings: (Int, String) -> Unit = { _, _ -> },
+    onNavigateToVehicleAssociation: () -> Unit = {}
 ) {
     NavHost(
         navController = navController,
@@ -222,7 +225,8 @@ fun DriverNavHost(
             DriverProfileScreen(
                 onNavigateToPersonalInfo = onNavigateToPersonalInfo,
                 onNavigateToChangeEmail = onNavigateToChangeEmail,
-                onNavigateToChangePhone = onNavigateToChangePhone
+                onNavigateToChangePhone = onNavigateToChangePhone,
+                onNavigateToVehicleAssociation = onNavigateToVehicleAssociation,
             )
         }
         composable(DriverRoutes.HISTORY) {

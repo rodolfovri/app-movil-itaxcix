@@ -1,7 +1,6 @@
 package com.rodolfo.itaxcix.feature.driver.history
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,6 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -104,7 +103,9 @@ fun DriverTravelDetailScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = Color.White,
+                    titleContentColor = Color.Black,
+                    navigationIconContentColor = Color.Black
                 )
             )
         }
@@ -114,15 +115,12 @@ fun DriverTravelDetailScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(ITaxCixPaletaColors.Background)
+                .padding(16.dp),
+            contentAlignment = Alignment.TopCenter
         ) {
             when (travelRatingState) {
                 is DriverHistoryViewModel.TravelRatingState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = ITaxCixPaletaColors.Blue1)
-                    }
+                    CircularProgressIndicator(color = ITaxCixPaletaColors.Blue1)
                 }
 
                 is DriverHistoryViewModel.TravelRatingState.Success -> {
@@ -130,23 +128,67 @@ fun DriverTravelDetailScreen(
 
                     Column(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .fillMaxWidth()
                             .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
-                        // Información básica del viaje
-                        TravelInfoSection(
-                            origin = origin,
-                            destination = destination,
-                            status = status,
-                            startDate = startDate
+                        // Sección de información del viaje
+                        Text(
+                            text = "Información del viaje",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
                         )
 
-                        // Sección de calificaciones (solo del conductor al ciudadano)
-                        DriverRatingSection(
-                            driverRating = ratingData.driverRating
+                        InfoRow(
+                            icon = Icons.Default.LocationOn,
+                            label = "Origen",
+                            value = origin,
+                            iconColor = Color(0xFF4CAF50)
                         )
+
+                        InfoRow(
+                            icon = Icons.Default.LocationOn,
+                            label = "Destino",
+                            value = destination,
+                            iconColor = Color(0xFFF44336)
+                        )
+
+                        InfoRow(
+                            icon = Icons.Default.AccessTime,
+                            label = "Estado",
+                            value = status,
+                            iconColor = getStatusColor(status)
+                        )
+
+                        if (startDate.isNotEmpty()) {
+                            InfoRow(
+                                icon = Icons.Default.DateRange,
+                                label = "Fecha",
+                                value = startDate,
+                                iconColor = ITaxCixPaletaColors.Blue1
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Sección de calificación
+                        Text(
+                            text = "Tu calificación",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                        )
+
+                        when (ratingData.driverRating) {
+                            null -> {
+                                NoRatingSection()
+                            }
+                            else -> {
+                                DriverRatingDetails(rating = ratingData.driverRating!!)
+                            }
+                        }
                     }
                 }
 
@@ -161,61 +203,6 @@ fun DriverTravelDetailScreen(
 }
 
 @Composable
-fun TravelInfoSection(
-    origin: String,
-    destination: String,
-    status: String,
-    startDate: String
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = "Información del Viaje",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = ITaxCixPaletaColors.Blue1,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        InfoRow(
-            icon = Icons.Default.LocationOn,
-            label = "Origen",
-            value = origin,
-            iconColor = Color(0xFF4CAF50)
-        )
-
-        FlexibleDivider()
-
-        InfoRow(
-            icon = Icons.Default.LocationOn,
-            label = "Destino",
-            value = destination,
-            iconColor = Color(0xFFF44336)
-        )
-
-        FlexibleDivider()
-
-        InfoRow(
-            icon = Icons.Default.AccessTime,
-            label = "Estado",
-            value = status,
-            iconColor = getStatusColor(status)
-        )
-
-        if (startDate.isNotEmpty()) {
-            FlexibleDivider()
-            InfoRow(
-                icon = Icons.Default.DateRange,
-                label = "Fecha",
-                value = startDate,
-                iconColor = ITaxCixPaletaColors.Blue1
-            )
-        }
-    }
-}
-
-@Composable
 fun InfoRow(
     icon: ImageVector,
     label: String,
@@ -223,8 +210,10 @@ fun InfoRow(
     iconColor: Color = ITaxCixPaletaColors.Blue1
 ) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
@@ -235,65 +224,27 @@ fun InfoRow(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
+        Column {
             Text(
                 text = label,
-                fontSize = 14.sp,
-                color = Color.Gray,
-                fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
             )
-            Spacer(modifier = Modifier.height(4.dp))
+
             Text(
                 text = value,
-                fontSize = 16.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.SemiBold
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
-}
 
-@Composable
-fun FlexibleDivider() {
-    Spacer(modifier = Modifier.height(16.dp))
     HorizontalDivider(
-        color = Color.Gray.copy(alpha = 0.2f),
-        thickness = 1.dp
+        modifier = Modifier.padding(start = 40.dp),
+        color = Color.LightGray.copy(alpha = 0.3f),
+        thickness = 0.5.dp
     )
-    Spacer(modifier = Modifier.height(16.dp))
-}
-
-@Composable
-fun DriverRatingSection(
-    driverRating: TravelRatingResult.Rating?
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = "Tu Calificación",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = ITaxCixPaletaColors.Blue1,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        Text(
-            text = "Calificación que le diste al pasajero",
-            fontSize = 16.sp,
-            color = Color.Gray,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        when (driverRating) {
-            null -> {
-                NoRatingSection()
-            }
-            else -> {
-                DriverRatingDetails(rating = driverRating)
-            }
-        }
-    }
 }
 
 @Composable
@@ -303,82 +254,145 @@ fun DriverRatingDetails(rating: TravelRatingResult.Rating) {
     ) {
         // Información de quién calificó a quién
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = null,
-                tint = Color.Gray,
-                modifier = Modifier.size(20.dp)
+                tint = ITaxCixPaletaColors.Blue1,
+                modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Calificaste a ${rating.ratedName}",
-                fontSize = 16.sp,
-                color = Color.Gray
-            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column {
+                Text(
+                    text = "Pasajero calificado",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+
+                Text(
+                    text = rating.ratedName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Normal,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
 
-        // Estrellas y puntuación
+        HorizontalDivider(
+            modifier = Modifier.padding(start = 40.dp),
+            color = Color.LightGray.copy(alpha = 0.3f),
+            thickness = 0.5.dp
+        )
+
+        // Calificación con estrellas
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 20.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            repeat(5) { index ->
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = if (index < rating.score) Color(0xFFFFD700) else Color.Gray.copy(alpha = 0.3f),
-                    modifier = Modifier.size(28.dp)
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = null,
+                tint = Color(0xFFFFD700),
+                modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column {
+                Text(
+                    text = "Calificación",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
                 )
-                if (index < 4) {
-                    Spacer(modifier = Modifier.width(4.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    repeat(5) { index ->
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = if (index < rating.score) Color(0xFFFFD700) else Color.Gray.copy(alpha = 0.3f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        if (index < 4) {
+                            Spacer(modifier = Modifier.width(2.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "${rating.score}/5",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = "${rating.score}/5",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = ITaxCixPaletaColors.Blue1
-            )
         }
 
-        // Comentario si existe
         if (rating.comment.isNotEmpty()) {
-            Text(
-                text = "Tu comentario:",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp)
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 40.dp),
+                color = Color.LightGray.copy(alpha = 0.3f),
+                thickness = 0.5.dp
             )
 
-            Text(
-                text = rating.comment,
-                fontSize = 16.sp,
-                color = Color.Black,
-                lineHeight = 24.sp,
+            // Comentario
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Color.White,
-                        RoundedCornerShape(8.dp)
-                    )
-                    .padding(16.dp)
-            )
+                    .padding(vertical = 12.dp, horizontal = 4.dp)
+            ) {
+                Text(
+                    text = "Tu comentario",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = rating.comment,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Normal,
+                    lineHeight = 20.sp,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
 
-        // Fecha si está disponible
         if (rating.createdAt.isNotEmpty()) {
-            Text(
-                text = "Fecha de calificación: ${rating.createdAt}",
-                fontSize = 14.sp,
-                color = Color.Gray
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 40.dp),
+                color = Color.LightGray.copy(alpha = 0.3f),
+                thickness = 0.5.dp
             )
+
+            // Fecha de calificación
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp, horizontal = 4.dp)
+            ) {
+                Text(
+                    text = "Fecha de calificación",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+
+                Text(
+                    text = rating.createdAt,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Normal,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
     }
 }
@@ -395,12 +409,12 @@ fun NoRatingSection() {
             imageVector = Icons.Default.Star,
             contentDescription = null,
             tint = Color.Gray.copy(alpha = 0.4f),
-            modifier = Modifier.size(56.dp)
+            modifier = Modifier.size(48.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "Sin calificación",
-            fontSize = 20.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
             color = Color.Gray,
             textAlign = TextAlign.Center
@@ -408,7 +422,7 @@ fun NoRatingSection() {
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "No has calificado este viaje",
-            fontSize = 16.sp,
+            fontSize = 14.sp,
             color = Color.Gray,
             textAlign = TextAlign.Center
         )
@@ -417,27 +431,24 @@ fun NoRatingSection() {
 
 @Composable
 fun ErrorSection() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Error al cargar el detalle",
-                color = Color.Red,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "No se pudo cargar la información del viaje",
-                color = Color.Gray,
-                textAlign = TextAlign.Center
-            )
-        }
+        Text(
+            text = "Error al cargar el detalle",
+            color = Color.Red,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "No se pudo cargar la información del viaje",
+            color = Color.Gray,
+            textAlign = TextAlign.Center
+        )
     }
 }
 

@@ -91,7 +91,10 @@ fun PersonalInformationDriverScreen(
         ) {
             when (profileInfoState) {
                 is DriverProfileViewModel.ProfileInfoState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         CircularProgressIndicator(color = ITaxCixPaletaColors.Blue1)
                     }
                 }

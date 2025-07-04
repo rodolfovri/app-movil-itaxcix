@@ -39,6 +39,9 @@ import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangeEmailResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangePhoneRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangePhoneResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.driver.ProfileInformationDriverResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.VehicleAssociationRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.VehicleAssociationResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.VehicleDisassociationResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.EmergencyNumberResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.RegisterIncidentRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRequestDTO
@@ -90,4 +93,6 @@ interface ApiService {
     suspend fun driverToCitizen(driverToCitizen: DriverToCitizenRequestDTO): DriverToCitizenResponseDTO
     suspend fun getRatingCommentsUser(userId: Int): RatingsCommentsResponseDTO
     suspend fun citizenToDriver(citizenToDriver: CitizenToDriverRequestDTO): CitizenToDriverResponseDTO
+    suspend fun vehicleAssociation(userId: Int, vehicle: VehicleAssociationRequestDTO): VehicleAssociationResponseDTO
+    suspend fun vehicleDissociation(userId: Int): VehicleDisassociationResponseDTO
 }

@@ -3,6 +3,7 @@ package com.rodolfo.itaxcix.feature.driver.travel.driverTravelViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rodolfo.itaxcix.data.local.PreferencesManager
+import com.rodolfo.itaxcix.data.remote.websocket.DriverWebSocketService
 import com.rodolfo.itaxcix.domain.model.TravelCancelResult
 import com.rodolfo.itaxcix.domain.model.TravelCompleteResult
 import com.rodolfo.itaxcix.domain.model.TravelRateResult
@@ -17,7 +18,8 @@ import javax.inject.Inject
 @HiltViewModel
 class DriverTripGoingViewModel @Inject constructor(
     private val travelRepository: TravelRepository,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    val driverWebSocketService: DriverWebSocketService
 ) : ViewModel() {
 
     val userData = preferencesManager.userData

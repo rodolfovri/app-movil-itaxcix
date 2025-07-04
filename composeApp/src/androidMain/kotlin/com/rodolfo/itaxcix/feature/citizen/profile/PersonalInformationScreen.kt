@@ -92,7 +92,12 @@ fun PersonalInformationScreen(
         ) {
             when (profileInfoState) {
                 is CitizenProfileViewModel.ProfileInfoState.Loading -> {
-                    CircularProgressIndicator(color = ITaxCixPaletaColors.Blue1)
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = ITaxCixPaletaColors.Blue1)
+                    }
                 }
 
                 is CitizenProfileViewModel.ProfileInfoState.Error -> {

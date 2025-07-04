@@ -45,6 +45,9 @@ import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangeEmailResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangePhoneRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.common.VerifyChangePhoneResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.driver.ProfileInformationDriverResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.VehicleAssociationRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.VehicleAssociationResponseDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.VehicleDisassociationResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.EmergencyNumberResponseDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.RegisterIncidentRequestDTO
 import com.rodolfo.itaxcix.data.remote.dto.travel.TravelRequestDTO
@@ -62,6 +65,7 @@ import io.ktor.client.call.body
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
@@ -650,6 +654,39 @@ class ApiServiceImpl(
                 addAuthToken()
                 contentType(ContentType.Application.Json)
                 setBody(citizenToDriver)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun vehicleAssociation(userId: Int, vehicle: VehicleAssociationRequestDTO): VehicleAssociationResponseDTO {
+        return safeApiCall {
+            val response = client.post("$baseUrl/users/$userId/vehicle/association") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+                setBody(vehicle)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
+    override suspend fun vehicleDissociation(userId: Int): VehicleDisassociationResponseDTO {
+        return safeApiCall {
+            val response = client.delete("$baseUrl/users/$userId/vehicle/association") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
             }
 
             if (response.status.value in 200..299) {

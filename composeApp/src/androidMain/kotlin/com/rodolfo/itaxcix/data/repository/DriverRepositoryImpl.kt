@@ -2,12 +2,15 @@ package com.rodolfo.itaxcix.data.repository
 
 import com.rodolfo.itaxcix.data.remote.api.ApiService
 import com.rodolfo.itaxcix.data.remote.dto.driver.DriverToCitizenRequestDTO
+import com.rodolfo.itaxcix.data.remote.dto.driver.VehicleAssociationRequestDTO
 import com.rodolfo.itaxcix.domain.model.DriverAvailabilityResult
 import com.rodolfo.itaxcix.domain.model.DriverStatusResult
 import com.rodolfo.itaxcix.domain.model.DriverToCitizenResult
 import com.rodolfo.itaxcix.domain.model.ProfileInformationDriverResult
 import com.rodolfo.itaxcix.domain.model.TravelRespondResult
 import com.rodolfo.itaxcix.domain.model.TravelStartResult
+import com.rodolfo.itaxcix.domain.model.VehicleAssociationResult
+import com.rodolfo.itaxcix.domain.model.VehicleDisassociationResult
 import com.rodolfo.itaxcix.domain.repository.DriverRepository
 
 class DriverRepositoryImpl(private val apiService: ApiService) : DriverRepository {
@@ -65,6 +68,25 @@ class DriverRepositoryImpl(private val apiService: ApiService) : DriverRepositor
             status = response.data.status,
             message = response.data.message,
             citizenProfileId = response.data.citizenProfileId
+        )
+    }
+
+    override suspend fun vehicleAssociation(userId: Int, vehicle: VehicleAssociationRequestDTO): VehicleAssociationResult {
+        val response = apiService.vehicleAssociation(userId, vehicle)
+        return VehicleAssociationResult(
+            userId = response.data.userId,
+            vehicleId = response.data.vehicleId,
+            plateValue = response.data.plateValue,
+            vehicleCreated = response.data.vehicleCreated,
+            tucsUpdate = response.data.tucsUpdate,
+            message = response.data.message
+        )
+    }
+
+    override suspend fun vehicleDissociation(userId: Int): VehicleDisassociationResult {
+        val response = apiService.vehicleDissociation(userId)
+        return VehicleDisassociationResult(
+            message = response.message
         )
     }
 }

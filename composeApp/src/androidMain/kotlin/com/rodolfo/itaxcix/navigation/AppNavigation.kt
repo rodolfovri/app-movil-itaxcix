@@ -57,11 +57,13 @@ import com.rodolfo.itaxcix.feature.driver.history.DriverTravelDetailScreen
 import com.rodolfo.itaxcix.feature.driver.home.CitizenRatingsScreen
 import com.rodolfo.itaxcix.feature.driver.profile.DriverChangeEmailScreen
 import com.rodolfo.itaxcix.feature.driver.profile.DriverChangePhoneScreen
+import com.rodolfo.itaxcix.feature.driver.profile.DriverVehicleAssociationScreen
 import com.rodolfo.itaxcix.feature.driver.profile.PersonalInformationDriverScreen
 import com.rodolfo.itaxcix.feature.driver.profile.driverProfileViewModel.DriverContactViewModel
 import com.rodolfo.itaxcix.feature.driver.profile.driverProfileViewModel.DriverProfileViewModel
 import com.rodolfo.itaxcix.feature.driver.travel.DriverTripGoingScreen
 import com.rodolfo.itaxcix.feature.driver.travel.DriverTripInProgressScreen
+import com.rodolfo.itaxcix.feature.driver.travel.driverTravelViewModel.DriverTripGoingViewModel
 import com.rodolfo.itaxcix.feature.driver.viewModel.AuthViewModel
 import com.rodolfo.itaxcix.feature.driver.viewModel.CameraValidationDriverViewModel
 import com.rodolfo.itaxcix.feature.driver.viewModel.DriverHomeViewModel
@@ -113,6 +115,7 @@ object Routes {
     const val CITIZEN_RATINGS = "citizen_ratings/{citizenId}/{citizenName}"
 
     const val CITIZEN_TO_DRIVER = "citizen_to_driver"
+    const val DRIVER_VEHICLE_ASSOCIATION = "driver_vehicle_association"
 
 }
 
@@ -455,6 +458,11 @@ fun AppNavigation(
                     ) {
                         popUpTo(Routes.DASHBOARD_DRIVER) { inclusive = false }
                     }
+                },
+                onNavigateToVehicleAssociation = {
+                    navController.navigate(Routes.DRIVER_VEHICLE_ASSOCIATION) {
+                        popUpTo(Routes.DASHBOARD_DRIVER) { inclusive = false }
+                    }
                 }
             )
         }
@@ -641,6 +649,8 @@ fun AppNavigation(
             val passengerName = backStackEntry.arguments?.getString("passengerName")?.replace("_", " ") ?: ""
             val passengerRating = backStackEntry.arguments?.getFloat("passengerRating")?.toDouble() ?: 0.0
 
+            val tripViewModel = hiltViewModel<DriverTripGoingViewModel>()
+
             val trip = TripRequestMessage.TripRequestData(
                 tripId = tripId,
                 passengerId = passengerId,
@@ -664,6 +674,7 @@ fun AppNavigation(
                         popUpTo(Routes.DASHBOARD_DRIVER) { inclusive = true }
                     }
                 },
+                driverWebSocketService = tripViewModel.driverWebSocketService
             )
         }
 
@@ -911,6 +922,22 @@ fun AppNavigation(
                 citizenId = citizenId,
                 citizenName = citizenName.replace("_", " "),
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Routes.DRIVER_VEHICLE_ASSOCIATION
+            ) {
+            val viewModel = hiltViewModel<DriverProfileViewModel>()
+
+            DriverVehicleAssociationScreen(
+                viewModel = viewModel,
+                onBackPressed = { navController.popBackStack() },
+                onSuccess = {
+                    navController.navigate(Routes.DASHBOARD_DRIVER) {
+                        popUpTo(Routes.DASHBOARD_DRIVER) { inclusive = true }
+                    }
+                }
             )
         }
     }

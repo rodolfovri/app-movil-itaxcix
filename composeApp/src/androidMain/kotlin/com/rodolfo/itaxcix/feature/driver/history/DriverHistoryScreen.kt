@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -231,53 +232,80 @@ fun TravelHistoryCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Información del viaje
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
+            // Información del viaje con iconos separados
+            Column(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = ITaxCixPaletaColors.Blue1,
-                    modifier = Modifier.size(20.dp)
+                // Origen
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = ITaxCixPaletaColors.Blue1,
+                        modifier = Modifier.size(20.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Origen",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = travel.origin,
+                            fontSize = 14.sp,
+                            color = Color.Black
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                HorizontalDivider(
+                    color = Color.LightGray.copy(alpha = 0.5f),
+                    thickness = 0.5.dp,
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Column(
-                    modifier = Modifier.weight(1f)
+                // Destino
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Text(
-                        text = "Origen",
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = travel.origin,
-                        fontSize = 14.sp,
-                        color = Color.Black,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                    Icon(
+                        imageVector = Icons.Default.Place,
+                        contentDescription = null,
+                        tint = Color.Red,
+                        modifier = Modifier.size(20.dp)
                     )
 
-                    HorizontalDivider(
-                        color = Color.LightGray.copy(alpha = 0.5f),
-                        thickness = 0.5.dp,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                    Text(
-                        text = "Destino",
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = travel.destination,
-                        fontSize = 14.sp,
-                        color = Color.Black
-                    )
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "Destino",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = travel.destination,
+                            fontSize = 14.sp,
+                            color = Color.Black
+                        )
+                    }
                 }
             }
 

@@ -34,8 +34,10 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material.icons.outlined.ChangeCircle
 import androidx.compose.material.icons.outlined.ContactMail
+import androidx.compose.material.icons.outlined.LocalTaxi
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material.icons.outlined.TaxiAlert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -89,11 +91,13 @@ fun DriverProfileScreen(
     onNavigateToPersonalInfo: () -> Unit = { },
     onNavigateToChangeEmail: () -> Unit = { },
     onNavigateToChangePhone: () -> Unit = { },
+    onNavigateToVehicleAssociation: () -> Unit = { },
 ) {
     val userData by viewModel.userData.collectAsState()
     val driverToCitizenState by viewModel.driverToCitizenState.collectAsState()
     val uploadState by viewModel.uploadState.collectAsState()
     val isLoadingProfileImage by viewModel.isLoadingProfileImage.collectAsState()
+    val vehicleDisassociationState by viewModel.vehicleDisassociationState.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -103,6 +107,9 @@ fun DriverProfileScreen(
     val isDTCLoading = driverToCitizenState is DriverProfileViewModel.DriverToCitizenState.Loading
     val isDTCSuccess = driverToCitizenState is DriverProfileViewModel.DriverToCitizenState.Success
 
+    val isVDLoading = vehicleDisassociationState is DriverProfileViewModel.VehicleDisassociationState.Loading
+    val isVDSuccess = vehicleDisassociationState is DriverProfileViewModel.VehicleDisassociationState.Success
+
     // Estados para el Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     var isSuccessSnackbar by remember { mutableStateOf(false) }
@@ -111,6 +118,20 @@ fun DriverProfileScreen(
     LaunchedEffect(key1 = driverToCitizenState) {
         when (val state = driverToCitizenState) {
             is DriverProfileViewModel.DriverToCitizenState.Error -> {
+                isSuccessSnackbar = false
+                snackbarHostState.showSnackbar(
+                    message = state.message,
+                    duration = SnackbarDuration.Long
+                )
+            }
+            else -> {}
+        }
+    }
+
+    // Agregar este LaunchedEffect para vehicle disassociation
+    LaunchedEffect(key1 = vehicleDisassociationState) {
+        when (val state = vehicleDisassociationState) {
+            is DriverProfileViewModel.VehicleDisassociationState.Error -> {
                 isSuccessSnackbar = false
                 snackbarHostState.showSnackbar(
                     message = state.message,
@@ -189,7 +210,9 @@ fun DriverProfileScreen(
                     onNavigateToPersonalInfo = onNavigateToPersonalInfo,
                     onNavigateToChangeEmail = onNavigateToChangeEmail,
                     onNavigateToChangePhone = onNavigateToChangePhone,
-                    onConvertToCitizen = { viewModel.convertToCitizen() }
+                    onConvertToCitizen = { viewModel.convertToCitizen() },
+                    onDisassociateVehicle = { viewModel.disassociateVehicle() },
+                    onNavigateToVehicleAssociation = onNavigateToVehicleAssociation
                 )
             }
         }
@@ -212,6 +235,16 @@ fun DriverProfileScreen(
             successTitle = "¡Solicitud enviada!",
             loadingMessage = "Estamos procesando tu solicitud para convertirte en ciudadano...",
             successMessage = "Tu solicitud ha sido enviada correctamente. Te notificaremos cuando sea aprobada."
+        )
+
+        // Agregar este ITaxCixProgressRequest para vehicle disassociation
+        ITaxCixProgressRequest(
+            isVisible = isVDLoading || isVDSuccess,
+            isSuccess = isVDSuccess,
+            loadingTitle = "Desasociando vehículo",
+            successTitle = "¡Vehículo desasociado!",
+            loadingMessage = "Estamos procesando la desasociación de tu vehículo...",
+            successMessage = "Tu vehículo ha sido desasociado correctamente."
         )
     }
 }
@@ -344,7 +377,9 @@ private fun MenuButtons(
     onNavigateToPersonalInfo: () -> Unit = { },
     onNavigateToChangeEmail: () -> Unit = { },
     onNavigateToChangePhone: () -> Unit = { },
-    onConvertToCitizen: () -> Unit = { }
+    onConvertToCitizen: () -> Unit = { },
+    onDisassociateVehicle: () -> Unit = { },
+    onNavigateToVehicleAssociation: () -> Unit = { }
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -373,6 +408,21 @@ private fun MenuButtons(
             icon = Icons.Outlined.ChangeCircle,
             title = "Convertirse en Ciudadano",
             onClick = { onConvertToCitizen() }
+        )
+
+
+        // Asociar vehiculo a conductor
+        MenuButton(
+            icon = Icons.Outlined.LocalTaxi,
+            title = "Asociar Vehículo",
+            onClick = { onNavigateToVehicleAssociation() }
+        )
+
+        // Desasociar vehiculo de conductor
+        MenuButton(
+            icon = Icons.Outlined.TaxiAlert,
+            title = "Desasociar Vehículo",
+            onClick = { onDisassociateVehicle() }
         )
 
     }

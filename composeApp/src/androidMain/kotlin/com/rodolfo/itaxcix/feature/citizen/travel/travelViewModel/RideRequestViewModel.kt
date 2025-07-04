@@ -269,11 +269,12 @@ class RideRequestViewModel @Inject constructor(
             LatLng(northeastLat, northeastLng)   // Esquina noreste
         )
 
+
         val request = FindAutocompletePredictionsRequest.builder()
             .setTypesFilter(listOf(PlaceTypes.ADDRESS))
             .setSessionToken(sessionToken)
             .setCountries("PE") // Establecer el país a Perú
-            .setLocationRestriction(bounds) // Restringir a la región de Lambayeque
+            //.setLocationRestriction(bounds) // Restringir a la región de Lambayeque
             .setQuery(query)
             .build()
 
@@ -292,7 +293,6 @@ class RideRequestViewModel @Inject constructor(
         }
     }
 
-    // Método para seleccionar un lugar
     // Método para seleccionar un lugar
     fun selectPlace(prediction: AutocompletePrediction, isOrigin: Boolean) {
         if (isOrigin) {

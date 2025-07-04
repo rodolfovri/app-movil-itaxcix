@@ -32,8 +32,11 @@ class CitizenHistoryViewModel @Inject constructor(
                 _historyState.value = HistoryState.Loading
                 _currentPage.value = page
 
+                println("Loading travel history, Page: $page")
+
                 val userId = userData.value?.id ?: return@launch
                 val result = travelRepository.travelHistory(userId, page)
+                println("Travel history loaded - Current page: ${result.data.meta.currentPage}, Total: ${result.data.meta.total}")
 
                 _historyState.value = HistoryState.Success(result)
             } catch (e: Exception) {

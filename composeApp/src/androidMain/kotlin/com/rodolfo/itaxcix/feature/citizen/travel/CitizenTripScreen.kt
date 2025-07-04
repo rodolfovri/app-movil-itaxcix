@@ -22,7 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmergencyShare
+import androidx.compose.material.icons.filled.ContactEmergency
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
@@ -35,7 +35,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedTextField
@@ -121,6 +120,8 @@ fun CitizenTripScreen(
     val rateIsLoading = rateState is CitizenTripViewModel.RateState.Loading
     val rateIsSuccess = rateState is CitizenTripViewModel.RateState.Success
 
+    var userInitiatedCancellation by remember { mutableStateOf(false) }
+
     // Launcher para solicitar permiso de llamada
     val callPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -134,15 +135,23 @@ fun CitizenTripScreen(
                 data = Uri.parse("tel:$emergencyNumber")
             }
             context.startActivity(intent)
+            viewModel.cancelTrip(tripId)
         }
     }
 
-    // Efecto para manejar el flujo de cancelación
+    // Modificar el LaunchedEffect para cancelState
     LaunchedEffect(cancelState) {
         when (cancelState) {
             is CitizenTripViewModel.CancelState.Success -> {
                 delay(3000)
-                showIncidenceDialog = true
+                // Solo mostrar el flujo de incidencia si el usuario canceló
+                if (userInitiatedCancellation) {
+                    if (emergencyState is EmergencyViewModel.EmergencyState.Success) {
+                        onBackToHome()
+                    } else {
+                        showIncidenceDialog = true
+                    }
+                }
                 viewModel.onCancelSuccessShown()
             }
             else -> {}
@@ -210,21 +219,31 @@ fun CitizenTripScreen(
     var isTripCancelled by remember { mutableStateOf(false) }
     var isTripCompleted by remember { mutableStateOf(false) }
 
+    LaunchedEffect(tripId) {
+        // Limpiar el estado anterior cuando se inicia un nuevo viaje
+        citizenWebSocketService.resetTripStatusUpdates()
+    }
+
     // Efecto para manejar las actualizaciones de estado del viaje
     LaunchedEffect(tripStatusUpdates) {
         tripStatusUpdates?.let { update ->
-            when (update.data.status) {
-                "canceled" -> {
-                    isTripCancelled = true
-                    delay(3000)
-                    onBackToHome()
-                    Log.d("CitizenTripScreen", "Viaje cancelado por el conductor: $update")
+            if (update.data.tripId == tripId) {
+                when (update.data.status) {
+                    "canceled" -> {
+                        // Solo mostrar el mensaje del conductor si el usuario no canceló
+                        if (!userInitiatedCancellation) {
+                            isTripCancelled = true
+                            delay(3000)
+                            onBackToHome()
+                            Log.d("CitizenTripScreen", "Viaje cancelado por el conductor: $update")
+                        }
+                    }
+                    "completed" -> {
+                        showRatingDialog = true
+                        Log.d("CitizenTripScreen", "Viaje completado: $update")
+                    }
                 }
-                "completed" -> {
-                    // Mostrar el diálogo de calificación cuando el viaje se complete
-                    showRatingDialog = true
-                    Log.d("CitizenTripScreen", "Viaje completado: $update")
-                }
+                citizenWebSocketService.resetTripStatusUpdates()
             }
         }
     }
@@ -239,22 +258,32 @@ fun CitizenTripScreen(
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    IconButton(
-                        onClick = {
-                            emergencyViewModel.getEmergencyNumber()
-                        },
+                    Box(
                         modifier = Modifier
-                            .background(
-                                Color.Red.copy(alpha = 0.1f),
-                                CircleShape
-                            )
+                            .background(Color(0xFFE57373), CircleShape)
+                            .clickable {
+                                userInitiatedCancellation = true // Marcar que el usuario inició la cancelación
+                                emergencyViewModel.getEmergencyNumber()
+                            }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.EmergencyShare,
-                            contentDescription = "Emergencia",
-                            tint = Color.Red,
-                            modifier = Modifier.size(24.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContactEmergency,
+                                contentDescription = "Emergencia",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Emergencia",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -411,8 +440,8 @@ fun CitizenTripScreen(
 
         // Mostrar indicador de progreso/éxito para cancelación
         ITaxCixProgressRequest(
-            isVisible = isLoading || (isSuccess && !showIncidenceDialog),
-            isSuccess = isSuccess && !showIncidenceDialog,
+            isVisible = isLoading || (isSuccess && !showIncidenceDialog && userInitiatedCancellation),
+            isSuccess = isSuccess && !showIncidenceDialog && userInitiatedCancellation,
             loadingTitle = "Cancelando viaje",
             successTitle = "Viaje cancelado",
             loadingMessage = "Procesando tu solicitud...",
@@ -438,18 +467,19 @@ fun CitizenTripScreen(
                     data = Uri.parse("tel:$emergencyNumber")
                 }
                 context.startActivity(intent)
+                viewModel.cancelTrip(tripId)
             },
             emergencyNumber = emergencyNumber,
             countdownSeconds = 5
         )
     }
 
-    // Diálogo de confirmación para cancelar viaje
     ITaxCixConfirmDialog(
         showDialog = showCancelDialog,
         onDismiss = { showCancelDialog = false },
         onConfirm = {
             showCancelDialog = false
+            userInitiatedCancellation = true // Marcar que el usuario inició la cancelación
             viewModel.cancelTrip(tripId)
         },
         title = "Cancelar viaje",

@@ -1,5 +1,11 @@
 package com.rodolfo.itaxcix.feature.driver.travel
 
+import android.content.Intent
+import android.net.Uri
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,9 +17,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContactEmergency
+import androidx.compose.material.icons.filled.EmergencyShare
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -21,6 +31,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -40,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -47,9 +59,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.rodolfo.itaxcix.feature.auth.viewmodel.EmergencyViewModel
 import com.rodolfo.itaxcix.feature.driver.travel.driverTravelViewModel.DriverTripGoingViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
 import com.rodolfo.itaxcix.ui.design.ITaxCixConfirmDialog
+import com.rodolfo.itaxcix.ui.design.ITaxCixEmergencyDialog
 import com.rodolfo.itaxcix.ui.design.ITaxCixProgressRequest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -59,11 +73,13 @@ fun DriverTripGoingScreen(
     tripId: Int,
     passengerId: Int,
     viewModel: DriverTripGoingViewModel = hiltViewModel(),
-    onNavigateToHome: () -> Unit = {}
+    onNavigateToHome: () -> Unit = {},
+    emergencyViewModel: EmergencyViewModel = hiltViewModel(),
 ) {
     val driverTripGoingState by viewModel.driverTripGoingState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // Estados para los diálogos de confirmación
     var showFinishConfirmDialog by remember { mutableStateOf(false) }
@@ -73,6 +89,11 @@ fun DriverTripGoingScreen(
     // Estado adicional para controlar el progreso
     var showProgressDialog by remember { mutableStateOf(false) }
     var progressSuccess by remember { mutableStateOf(false) }
+
+    // Estados para emergencia
+    var showEmergencyDialog by remember { mutableStateOf(false) }
+    val emergencyState by emergencyViewModel.emergencyState.collectAsState()
+    val emergencyNumber by emergencyViewModel.emergencyNumber.collectAsState()
 
     val rateState by viewModel.rateState.collectAsState()
     val rating by viewModel.rating.collectAsState()
@@ -84,6 +105,23 @@ fun DriverTripGoingScreen(
     val isLoading = driverTripGoingState is DriverTripGoingViewModel.DriverTripOngoingUiState.Loading
     val rateIsLoading = rateState is DriverTripGoingViewModel.RateState.Loading
     val rateIsSuccess = rateState is DriverTripGoingViewModel.RateState.Success
+
+    // Launcher para solicitar permiso de llamada
+    val callPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permiso concedido, mostrar el diálogo de emergencia
+            showEmergencyDialog = true
+        } else {
+            // Permiso denegado, usar ACTION_DIAL como alternativa
+            val intent = Intent(Intent.ACTION_DIAL).apply {
+                data = Uri.parse("tel:$emergencyNumber")
+            }
+            context.startActivity(intent)
+            viewModel.cancelTrip(tripId)
+        }
+    }
 
     // Efectos para manejar estados
     LaunchedEffect(key1 = driverTripGoingState) {
@@ -113,13 +151,41 @@ fun DriverTripGoingScreen(
                 progressSuccess = true
                 delay(2000) // Mostrar mensaje de éxito por 2 segundos
                 showProgressDialog = false
-                viewModel.onCancelSuccessShown()
-                onNavigateToHome() // Navegar al dashboard del conductor
+                // Si es una cancelación por emergencia, ir directamente al dashboard
+                if (emergencyState is EmergencyViewModel.EmergencyState.Success) {
+                    onNavigateToHome()
+                } else {
+                    viewModel.onCancelSuccessShown()
+                    onNavigateToHome() // Navegar al dashboard del conductor
+                }
             }
             is DriverTripGoingViewModel.DriverTripOngoingUiState.Initial -> {
                 if (showProgressDialog && !showRatingDialog) {
                     showProgressDialog = false
                 }
+            }
+        }
+    }
+
+    // Efecto para manejar el estado de emergencia
+    LaunchedEffect(emergencyState) {
+        Log.d("EmergencyDebug", "Emergency state changed: $emergencyState")
+        when (emergencyState) {
+            is EmergencyViewModel.EmergencyState.Loading -> {
+                Log.d("EmergencyDebug", "Loading emergency number...")
+            }
+            is EmergencyViewModel.EmergencyState.Success -> {
+                Log.d("EmergencyDebug", "Success, requesting call permission for number: $emergencyNumber")
+                // En lugar de mostrar directamente el diálogo, solicitar permiso primero
+                callPermissionLauncher.launch(android.Manifest.permission.CALL_PHONE)
+                emergencyViewModel.onEmergencySuccessShown()
+            }
+            is EmergencyViewModel.EmergencyState.Error -> {
+                Log.d("EmergencyDebug", "Error: ${(emergencyState as EmergencyViewModel.EmergencyState.Error).message}")
+                emergencyViewModel.onEmergencyErrorShown()
+            }
+            else -> {
+                Log.d("EmergencyDebug", "Initial state")
             }
         }
     }
@@ -144,7 +210,40 @@ fun DriverTripGoingScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
-            containerColor = Color.White
+            containerColor = Color.White,
+            topBar = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFE57373), CircleShape)
+                            .clickable { emergencyViewModel.getEmergencyNumber() }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContactEmergency,
+                                contentDescription = "Emergencia",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Emergencia",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
         ) { paddingValues ->
             Column(
                 modifier = Modifier
@@ -269,6 +368,22 @@ fun DriverTripGoingScreen(
                 is DriverTripGoingViewModel.DriverTripOngoingUiState.CancelSuccess -> "El viaje ha sido cancelado correctamente."
                 else -> "La operación se completó exitosamente."
             }
+        )
+
+        // Diálogo de emergencia
+        ITaxCixEmergencyDialog(
+            showDialog = showEmergencyDialog,
+            onDismiss = { showEmergencyDialog = false },
+            onConfirmCall = {
+                showEmergencyDialog = false
+                val intent = Intent(Intent.ACTION_CALL).apply {
+                    data = Uri.parse("tel:$emergencyNumber")
+                }
+                context.startActivity(intent)
+                viewModel.cancelTrip(tripId)
+            },
+            emergencyNumber = emergencyNumber,
+            countdownSeconds = 5
         )
     }
 

@@ -355,4 +355,10 @@ class CitizenWebSocketService @Inject constructor(
             _tripResponse.value = null
         }
     }
+
+    fun resetTripStatusUpdates() {
+        scope.launch {
+            _tripStatusUpdates.value = null
+        }
+    }
 }
