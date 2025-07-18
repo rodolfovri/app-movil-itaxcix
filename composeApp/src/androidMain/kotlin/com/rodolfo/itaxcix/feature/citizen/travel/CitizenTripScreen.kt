@@ -741,8 +741,11 @@ fun CitizenTripScreen(
                             showRatingDialog = false
                             viewModel.rateTrip(tripId) // Aquí debes pasar el ID del ciudadano
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = ITaxCixPaletaColors.Blue1),
-                        modifier = Modifier.fillMaxWidth()
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = ITaxCixPaletaColors.Blue1
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RectangleShape
                     ) {
                         Text("Enviar calificación")
                     }

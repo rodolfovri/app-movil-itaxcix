@@ -164,6 +164,36 @@ class RideRequestViewModel @Inject constructor(
         val district: String
     )
 
+    // Método auxiliar para validar y mapear distrito desde geocoding
+    private fun validateAndMapDistrictFromGeocoding(address: android.location.Address): String {
+        // Crear un texto similar al que viene de Places API
+        val candidates = listOfNotNull(
+            address.subLocality,
+            address.locality,
+            address.subAdminArea,
+            address.adminArea
+        )
+
+        // Buscar coincidencia con distritos de Chiclayo
+        for (candidate in candidates) {
+            val mappedDistrict = mapToChiclayoDistrict(candidate)
+            if (mappedDistrict != null) {
+                Log.d("GeoCoding", "Distrito validado: $mappedDistrict desde geocoding")
+                return mappedDistrict
+            }
+        }
+
+        // Si no se encuentra, usar locality como fallback
+        val fallbackDistrict = address.locality?.uppercase()
+            ?: address.subAdminArea?.uppercase()
+            ?: address.adminArea?.uppercase()
+            ?: "DISTRITO_NO_DISPONIBLE"
+
+        Log.d("GeoCoding", "Distrito fallback desde geocoding: $fallbackDistrict")
+        return fallbackDistrict
+    }
+
+    // Método actualizado getAddressFromLocation
     private suspend fun getAddressFromLocation(latitude: Double, longitude: Double): AddressInfo {
         return try {
             val geocoder = android.location.Geocoder(context, java.util.Locale.getDefault())
@@ -180,18 +210,8 @@ class RideRequestViewModel @Inject constructor(
                                 address.subThoroughfare?.let { append(it) }
                             }.trim().ifEmpty { "Dirección no disponible" }
 
-                            // CAMBIO PRINCIPAL: Priorizar locality sobre subLocality para obtener el distrito
-                            val district = address.locality?.uppercase()
-                                ?: address.subAdminArea?.uppercase() // Nivel administrativo sub (distrito)
-                                ?: address.adminArea?.uppercase()    // Nivel administrativo principal (provincia/región)
-                                ?: "DISTRITO_NO_DISPONIBLE"
-
-                            // Log para debugging
-                            Log.d("GeoCoding", "subLocality: ${address.subLocality}")
-                            Log.d("GeoCoding", "locality: ${address.locality}")
-                            Log.d("GeoCoding", "subAdminArea: ${address.subAdminArea}")
-                            Log.d("GeoCoding", "adminArea: ${address.adminArea}")
-                            Log.d("GeoCoding", "Distrito seleccionado: $district")
+                            // Usar el método de validación mejorado
+                            val district = validateAndMapDistrictFromGeocoding(address)
 
                             continuation.resume(AddressInfo(streetAddress, district))
                         } else {
@@ -211,18 +231,8 @@ class RideRequestViewModel @Inject constructor(
                             address.subThoroughfare?.let { append(it) }
                         }.trim().ifEmpty { "Dirección no disponible" }
 
-                        // CAMBIO PRINCIPAL: Priorizar locality sobre subLocality para obtener el distrito
-                        val district = address.locality?.uppercase()
-                            ?: address.subAdminArea?.uppercase() // Nivel administrativo sub (distrito)
-                            ?: address.adminArea?.uppercase()    // Nivel administrativo principal (provincia/región)
-                            ?: "DISTRITO_NO_DISPONIBLE"
-
-                        // Log para debugging
-                        Log.d("GeoCoding", "subLocality: ${address.subLocality}")
-                        Log.d("GeoCoding", "locality: ${address.locality}")
-                        Log.d("GeoCoding", "subAdminArea: ${address.subAdminArea}")
-                        Log.d("GeoCoding", "adminArea: ${address.adminArea}")
-                        Log.d("GeoCoding", "Distrito seleccionado: $district")
+                        // Usar el método de validación mejorado
+                        val district = validateAndMapDistrictFromGeocoding(address)
 
                         AddressInfo(streetAddress, district)
                     } else {
@@ -271,10 +281,10 @@ class RideRequestViewModel @Inject constructor(
 
 
         val request = FindAutocompletePredictionsRequest.builder()
-            .setTypesFilter(listOf(PlaceTypes.ADDRESS))
+            .setTypesFilter(listOf(PlaceTypes.GEOCODE, PlaceTypes.ESTABLISHMENT))
             .setSessionToken(sessionToken)
             .setCountries("PE") // Establecer el país a Perú
-            //.setLocationRestriction(bounds) // Restringir a la región de Lambayeque
+            .setLocationRestriction(bounds) // Restringir a la región de Lambayeque
             .setQuery(query)
             .build()
 
@@ -294,6 +304,85 @@ class RideRequestViewModel @Inject constructor(
     }
 
     // Método para seleccionar un lugar
+    // Agregar este companion object al RideRequestViewModel
+    companion object {
+        // Lista de distritos de Chiclayo con sus nombres exactos (mayúsculas, con tildes y espacios)
+        private val CHICLAYO_DISTRICTS = setOf(
+            "CHICLAYO",
+            "CAYALTÍ",
+            "CHONGOYAPE",
+            "ETEN",
+            "ETEN PUERTO",
+            "JOSÉ LEONARDO ORTIZ",
+            "LA VICTORIA",
+            "LAGUNAS",
+            "MONSEFÚ",
+            "NUEVA ARICA",
+            "OYOTÚN",
+            "PÁTAPO",
+            "PICSI",
+            "PIMENTEL",
+            "POMALCA",
+            "PUCALÁ",
+            "REQUE",
+            "SANTA ROSA",
+            "SAÑA",
+            "TUMÁN",
+            "ZAÑA"
+        )
+
+        /**
+         * Mapea un texto del secundario de Places API a un distrito válido de Chiclayo
+         * @param secondaryText El texto completo del secundario (ej: "José Leonardo Ortiz, Chiclayo, Lambayeque, Perú")
+         * @return El distrito en mayúsculas con tildes y espacios correctos, o null si no se encuentra
+         */
+        fun mapToChiclayoDistrict(secondaryText: String): String? {
+            // Dividir por comas y obtener las partes
+            val parts = secondaryText.split(",").map { it.trim() }
+
+            // Buscar en cada parte si coincide con algún distrito de Chiclayo
+            for (part in parts) {
+                val normalizedPart = part.uppercase()
+
+                // Buscar coincidencia exacta
+                if (CHICLAYO_DISTRICTS.contains(normalizedPart)) {
+                    return normalizedPart
+                }
+
+                // Buscar coincidencia parcial (para casos donde el texto puede estar incompleto)
+                val matchedDistrict = CHICLAYO_DISTRICTS.find { district ->
+                    district.contains(normalizedPart) || normalizedPart.contains(district)
+                }
+
+                if (matchedDistrict != null) {
+                    return matchedDistrict
+                }
+            }
+
+            return null
+        }
+    }
+
+    // Método auxiliar para extraer distrito de manera segura
+    private fun extractDistrictFromPrediction(prediction: AutocompletePrediction): String {
+        val fullSecondaryText = prediction.getSecondaryText(null).toString()
+
+        // Intentar mapear a un distrito válido de Chiclayo
+        val mappedDistrict = mapToChiclayoDistrict(fullSecondaryText)
+
+        if (mappedDistrict != null) {
+            Log.d("DistrictMapping", "Distrito mapeado: $mappedDistrict desde: $fullSecondaryText")
+            return mappedDistrict
+        }
+
+        // Si no se encuentra, usar el primer elemento como fallback
+        val districtOnly = fullSecondaryText.split(",")[0].trim().uppercase()
+        Log.d("DistrictMapping", "Distrito fallback: $districtOnly desde: $fullSecondaryText")
+
+        return districtOnly
+    }
+
+    // Método actualizado selectPlace que usa la nueva validación
     fun selectPlace(prediction: AutocompletePrediction, isOrigin: Boolean) {
         if (isOrigin) {
             getPlaceLocation(prediction.placeId) { location ->
@@ -302,20 +391,21 @@ class RideRequestViewModel @Inject constructor(
                 _originLatitude.value = location.latitude
                 _originLongitude.value = location.longitude
 
-                // Extraer calle y distrito
+                // Extraer calle y distrito usando el método mejorado
                 val streetName = prediction.getPrimaryText(null).toString()
-                val fullSecondaryText = prediction.getSecondaryText(null).toString()
-                val districtOnly = fullSecondaryText.split(",")[0].trim()
+                val district = extractDistrictFromPrediction(prediction)
 
                 // Combinar calle y distrito para mostrar en el campo
-                val displayText = "$streetName, $districtOnly"
+                val displayText = "$streetName, ${district.lowercase().split(" ").joinToString(" ") {
+                    it.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() }
+                }}"
 
                 _originQuery.value = displayText
                 _originAddress.value = streetName
-                _originDistrict.value = districtOnly.uppercase()
+                _originDistrict.value = district
                 _originPredictions.value = emptyList()
 
-                Log.d("Origen", "Calle: $streetName, Distrito: $districtOnly, Display: $displayText")
+                Log.d("Origen", "Calle: $streetName, Distrito: $district, Display: $displayText")
 
                 if (_destinationLatLng.value != null) {
                     calculateRoute()
@@ -328,20 +418,21 @@ class RideRequestViewModel @Inject constructor(
                 _destinationLatitude.value = location.latitude
                 _destinationLongitude.value = location.longitude
 
-                // Extraer calle y distrito
+                // Extraer calle y distrito usando el método mejorado
                 val streetName = prediction.getPrimaryText(null).toString()
-                val fullSecondaryText = prediction.getSecondaryText(null).toString()
-                val districtOnly = fullSecondaryText.split(",")[0].trim()
+                val district = extractDistrictFromPrediction(prediction)
 
                 // Combinar calle y distrito para mostrar en el campo
-                val displayText = "$streetName, $districtOnly"
+                val displayText = "$streetName, ${district.lowercase().split(" ").joinToString(" ") {
+                    it.replaceFirstChar { c -> if (c.isLowerCase()) c.titlecase() else c.toString() }
+                }}"
 
                 _destinationQuery.value = displayText
                 _destinationAddress.value = streetName
-                _destinationDistrict.value = districtOnly.uppercase()
+                _destinationDistrict.value = district
                 _destinationPredictions.value = emptyList()
 
-                Log.d("Destino", "Calle: $streetName, Distrito: $districtOnly, Display: $displayText")
+                Log.d("Destino", "Calle: $streetName, Distrito: $district, Display: $displayText")
 
                 if (_originLatLng.value != null) {
                     calculateRoute()

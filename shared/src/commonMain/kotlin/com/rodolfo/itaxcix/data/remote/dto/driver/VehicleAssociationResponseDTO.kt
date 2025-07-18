@@ -12,7 +12,7 @@ data class VehicleAssociationResponseDTO (
         val vehicleId: Int,
         val plateValue: String,
         val vehicleCreated: Boolean,
-        val tucsUpdate: Boolean,
+        val tucsUpdated: Int,
         val message: String
     )
 }

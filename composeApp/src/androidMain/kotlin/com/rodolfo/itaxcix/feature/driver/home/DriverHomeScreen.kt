@@ -459,7 +459,8 @@ fun TripRequestCard(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = 8.dp)
+                        .padding(end = 8.dp),
+                    shape = RectangleShape
                 ) {
                     Text("Rechazar")
                 }
@@ -469,7 +470,8 @@ fun TripRequestCard(
                     colors = ButtonDefaults.buttonColors(containerColor = ITaxCixPaletaColors.Blue1),
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 8.dp)
+                        .padding(start = 8.dp),
+                    shape = RectangleShape
                 ) {
                     Text("Aceptar")
                 }
@@ -505,7 +507,7 @@ fun AvailabilityToggleButton(
         modifier = modifier
             .fillMaxWidth()
             .height(56.dp),
-        shape = RoundedCornerShape(8.dp),
+        shape = RectangleShape,
         colors = ButtonDefaults.buttonColors(
             containerColor = backgroundColor
         )

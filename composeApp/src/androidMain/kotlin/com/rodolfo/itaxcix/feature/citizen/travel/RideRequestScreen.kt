@@ -295,7 +295,7 @@ fun RideRequestScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(0.6f)
+                        .weight(0.5f)
                 ) {
                     GoogleMap(
                         modifier = Modifier.fillMaxSize(),
@@ -358,7 +358,7 @@ fun RideRequestScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(0.3f)
+                        .weight(0.4f)
                         .padding(16.dp)
                 ) {
                     Box(

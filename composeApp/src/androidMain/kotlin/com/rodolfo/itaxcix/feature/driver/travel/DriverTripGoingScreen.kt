@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContactEmergency
-import androidx.compose.material.icons.filled.EmergencyShare
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -31,7 +30,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -59,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.rodolfo.itaxcix.data.remote.websocket.DriverWebSocketService
 import com.rodolfo.itaxcix.feature.auth.viewmodel.EmergencyViewModel
 import com.rodolfo.itaxcix.feature.driver.travel.driverTravelViewModel.DriverTripGoingViewModel
 import com.rodolfo.itaxcix.ui.ITaxCixPaletaColors
@@ -75,6 +74,7 @@ fun DriverTripGoingScreen(
     viewModel: DriverTripGoingViewModel = hiltViewModel(),
     onNavigateToHome: () -> Unit = {},
     emergencyViewModel: EmergencyViewModel = hiltViewModel(),
+    driverWebSocketService: DriverWebSocketService
 ) {
     val driverTripGoingState by viewModel.driverTripGoingState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -89,6 +89,13 @@ fun DriverTripGoingScreen(
     // Estado adicional para controlar el progreso
     var showProgressDialog by remember { mutableStateOf(false) }
     var progressSuccess by remember { mutableStateOf(false) }
+
+    // Agregar estos estados para manejar la cancelación del pasajero
+    var showCancelledProgressDialog by remember { mutableStateOf(false) }
+    var cancelledProgressSuccess by remember { mutableStateOf(false) }
+
+    // Observar actualizaciones de estado del viaje desde WebSocket
+    val tripStatusUpdates by driverWebSocketService.tripStatusUpdates.collectAsState()
 
     // Estados para emergencia
     var showEmergencyDialog by remember { mutableStateOf(false) }
@@ -120,6 +127,36 @@ fun DriverTripGoingScreen(
             }
             context.startActivity(intent)
             viewModel.cancelTrip(tripId)
+        }
+    }
+
+    // Agregar este nuevo LaunchedEffect para manejar cancelación del pasajero
+    LaunchedEffect(tripStatusUpdates) {
+        tripStatusUpdates?.let { update ->
+            // Verificar si la actualización es para este viaje específico
+            if (update.data.tripId == tripId) {
+                when (update.data.status) {
+                    "canceled" -> {
+                        // Mostrar el overlay de cancelación
+                        showCancelledProgressDialog = true
+                        cancelledProgressSuccess = true
+                    }
+                    else -> {
+                        // Otros estados si es necesario
+                    }
+                }
+                // Resetear el estado después de procesarlo
+                driverWebSocketService.resetTripStatusUpdates()
+            }
+        }
+    }
+
+    // Efecto para manejar la navegación después de mostrar el overlay de cancelación
+    LaunchedEffect(showCancelledProgressDialog) {
+        if (showCancelledProgressDialog && cancelledProgressSuccess) {
+            delay(2000) // Mostrar el overlay por 2 segundos
+            showCancelledProgressDialog = false
+            onNavigateToHome()
         }
     }
 
@@ -519,8 +556,9 @@ fun DriverTripGoingScreen(
                             viewModel.rateTrip(tripId)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = ITaxCixPaletaColors.Blue1),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RectangleShape
+                        ) {
                         Text("Enviar calificación")
                     }
                 }
@@ -536,5 +574,14 @@ fun DriverTripGoingScreen(
         successTitle = "¡Gracias por tu calificación!",
         loadingMessage = "Procesando tu valoración...",
         successMessage = "Tu calificación ha sido registrada. Regresando a la pantalla principal..."
+    )
+
+    ITaxCixProgressRequest(
+        isVisible = showCancelledProgressDialog,
+        isSuccess = cancelledProgressSuccess,
+        loadingTitle = "Viaje cancelado",
+        successTitle = "Viaje cancelado",
+        loadingMessage = "El pasajero ha cancelado el viaje.",
+        successMessage = "Regresando al dashboard principal..."
     )
 }

@@ -849,6 +849,8 @@ fun AppNavigation(
             val tripId = backStackEntry.arguments?.getInt("tripId") ?: 0
             val passengerId = backStackEntry.arguments?.getInt("passengerId") ?: 0
 
+            val tripViewModel = hiltViewModel<DriverTripGoingViewModel>()
+
             DriverTripGoingScreen(
                 tripId = tripId,
                 passengerId = passengerId,
@@ -857,6 +859,7 @@ fun AppNavigation(
                         popUpTo(Routes.DASHBOARD_DRIVER) { inclusive = true }
                     }
                 },
+                driverWebSocketService = tripViewModel.driverWebSocketService
             )
         }
 

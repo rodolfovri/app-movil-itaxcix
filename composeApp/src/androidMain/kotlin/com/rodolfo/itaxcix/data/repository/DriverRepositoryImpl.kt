@@ -78,7 +78,7 @@ class DriverRepositoryImpl(private val apiService: ApiService) : DriverRepositor
             vehicleId = response.data.vehicleId,
             plateValue = response.data.plateValue,
             vehicleCreated = response.data.vehicleCreated,
-            tucsUpdate = response.data.tucsUpdate,
+            tucsUpdated = response.data.tucsUpdated,
             message = response.data.message
         )
     }
