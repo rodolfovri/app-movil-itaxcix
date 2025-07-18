@@ -526,7 +526,7 @@ fun DriverTripGoingScreen(
                         onValueChange = { viewModel.updateRatingComment(it) },
                         isError = ratingCommentError != null,
                         label = { Text("Comentarios") },
-                        placeholder = { Text("Cuéntanos sobre tu experiencia...") },
+                        placeholder = { Text("Cuéntanos sobre tu experiencia... (opcional)") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp),

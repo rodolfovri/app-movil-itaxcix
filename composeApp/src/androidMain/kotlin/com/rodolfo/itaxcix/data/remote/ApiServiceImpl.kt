@@ -648,6 +648,22 @@ class ApiServiceImpl(
         }
     }
 
+    override suspend fun getRatingCommentsDriver(driverId: Int): RatingsCommentsResponseDTO {
+        return safeApiCall {
+            val response = client.get("$baseUrl/users/$driverId/ratings/comments") {
+                addAuthToken()
+                contentType(ContentType.Application.Json)
+            }
+
+            if (response.status.value in 200..299) {
+                response.body()
+            } else {
+                val errorBody = response.bodyAsText()
+                throw Exception(parseErrorMessage(errorBody))
+            }
+        }
+    }
+
     override suspend fun citizenToDriver(citizenToDriver: CitizenToDriverRequestDTO): CitizenToDriverResponseDTO {
         return safeApiCall {
             val response = client.post("$baseUrl/users/request-driver-role") {

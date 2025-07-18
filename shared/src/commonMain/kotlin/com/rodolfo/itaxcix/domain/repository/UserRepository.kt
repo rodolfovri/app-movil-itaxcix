@@ -54,4 +54,5 @@ interface UserRepository {
     suspend fun verifyChangePhone(verifyChange: VerifyChangePhoneRequestDTO): VerifyChangePhoneResult
     suspend fun helpCenter(): HelpCenterResult
     suspend fun getRatingCommentsUser(userId: Int): RatingsCommentsResult
+    suspend fun getRatingCommentsDriver(driverId: Int): RatingsCommentsResult
 }

@@ -124,20 +124,13 @@ class DriverTripGoingViewModel @Inject constructor(
     }
 
     private fun validateRatingComment() {
-        when {
-            _ratingComment.value.isBlank() -> {
-                _ratingCommentError.value = "Debes ingresar un comentario"
-            }
-            _ratingComment.value.trim().length < 5 -> {
-                _ratingCommentError.value = "El comentario debe tener al menos 5 caracteres"
-            }
-            else -> {
-                _ratingCommentError.value = null
-            }
+        if (_ratingComment.value.trim().isNotEmpty() && _ratingComment.value.trim().length < 5) {
+            _ratingCommentError.value = "El comentario debe tener al menos 5 caracteres"
+        } else {
+            _ratingCommentError.value = null
         }
     }
 
-    // Validación completa para calificación
     private fun validateRatingFields(): Pair<Boolean, String?> {
         validateRating()
         validateRatingComment()
@@ -148,9 +141,8 @@ class DriverTripGoingViewModel @Inject constructor(
         val isValid = !hasRatingError && !hasCommentError
 
         val errorMessage = when {
-            hasRatingError && hasCommentError -> "Debes seleccionar una calificación y agregar un comentario"
             hasRatingError -> "Debes seleccionar una calificación"
-            hasCommentError -> "Debes agregar un comentario"
+            hasCommentError -> _ratingCommentError.value
             else -> null
         }
 
@@ -171,7 +163,7 @@ class DriverTripGoingViewModel @Inject constructor(
                     travelId = tripId,
                     raterId = userData.value?.id ?: return@launch,
                     score = _rating.value,
-                    comment = _ratingComment.value
+                    comment = if (_ratingComment.value.trim().isEmpty()) "NINGUNO" else _ratingComment.value.trim()
                 )
                 val result = travelRepository.travelRate(tripId, travelRateRequest)
                 _rateState.value = RateState.Success(result)

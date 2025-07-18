@@ -711,8 +711,8 @@ fun CitizenTripScreen(
                         value = ratingComment,
                         onValueChange = { viewModel.updateRatingComment(it) },
                         isError = ratingCommentError != null,
-                        label = { Text("Comentarios") },
-                        placeholder = { Text("Cuéntanos sobre tu experiencia...") },
+                        label = { Text("Comentarios (opcional)") },
+                        placeholder = { Text("Cuéntanos sobre tu experiencia... (opcional)") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(120.dp),
@@ -739,7 +739,7 @@ fun CitizenTripScreen(
                     Button(
                         onClick = {
                             showRatingDialog = false
-                            viewModel.rateTrip(tripId) // Aquí debes pasar el ID del ciudadano
+                            viewModel.rateTrip(tripId)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = ITaxCixPaletaColors.Blue1

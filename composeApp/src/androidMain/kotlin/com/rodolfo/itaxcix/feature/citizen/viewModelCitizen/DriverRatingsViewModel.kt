@@ -23,9 +23,8 @@ class DriverRatingsViewModel @Inject constructor(
         viewModelScope.launch {
             _ratingsState.value = RatingsState.Loading
             try {
-                val ratingsInfo = userRepository.getRatingCommentsUser(driverId)
+                val ratingsInfo = userRepository.getRatingCommentsDriver(driverId)
                 _ratingsState.value = RatingsState.Success(ratingsInfo)
-                Log.d("DriverRatingsViewModel", "Calificaciones cargadas: ${ratingsInfo.data.averageRating}")
             } catch (e: Exception) {
                 _ratingsState.value = RatingsState.Error(e.message ?: "Error al cargar las calificaciones")
                 Log.e("DriverRatingsViewModel", "Error cargando calificaciones: ${e.message}")

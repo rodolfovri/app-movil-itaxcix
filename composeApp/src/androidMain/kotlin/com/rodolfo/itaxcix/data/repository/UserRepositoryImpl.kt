@@ -292,6 +292,37 @@ class UserRepositoryImpl(
         )
     }
 
+    override suspend fun getRatingCommentsDriver(driverId: Int): RatingsCommentsResult {
+        val response = apiService.getRatingCommentsDriver(driverId)
+        return RatingsCommentsResult(
+            message = response.message,
+            data = RatingsCommentsResult.RatingsData(
+                averageRating = response.data.averageRating,
+                totalRatings = response.data.totalRatings,
+                comments = response.data.comments.map { comment ->
+                    RatingsCommentsResult.RatingsData.CommentInfo(
+                        id = comment.id,
+                        travelId = comment.travelId,
+                        raterName = comment.raterName,
+                        score = comment.score,
+                        comment = comment.comment,
+                        createdAt = comment.createdAt
+                    )
+                },
+                meta = RatingsCommentsResult.RatingsData.MetaInfo(
+                    total = response.data.meta.total,
+                    perPage = response.data.meta.perPage,
+                    currentPage = response.data.meta.currentPage,
+                    lastPage = response.data.meta.lastPage,
+                    search = response.data.meta.search,
+                    filters = response.data.meta.filters,
+                    sortBy = response.data.meta.sortBy,
+                    sortDirection = response.data.meta.sortDirection
+                )
+            )
+        )
+    }
+
     // Funciones de extensión para mapeo
     private fun UserDTO.toDomain(): User {
         return User(

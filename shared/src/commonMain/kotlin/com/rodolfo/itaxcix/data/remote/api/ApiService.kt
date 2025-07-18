@@ -92,6 +92,7 @@ interface ApiService {
     suspend fun emergencyNumber(): EmergencyNumberResponseDTO
     suspend fun driverToCitizen(driverToCitizen: DriverToCitizenRequestDTO): DriverToCitizenResponseDTO
     suspend fun getRatingCommentsUser(userId: Int): RatingsCommentsResponseDTO
+    suspend fun getRatingCommentsDriver(driverId: Int): RatingsCommentsResponseDTO
     suspend fun citizenToDriver(citizenToDriver: CitizenToDriverRequestDTO): CitizenToDriverResponseDTO
     suspend fun vehicleAssociation(userId: Int, vehicle: VehicleAssociationRequestDTO): VehicleAssociationResponseDTO
     suspend fun vehicleDissociation(userId: Int): VehicleDisassociationResponseDTO
